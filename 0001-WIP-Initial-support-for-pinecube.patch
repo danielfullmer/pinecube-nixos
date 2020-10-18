@@ -1,0 +1,158 @@
+From 9c657a26092f58815a7f68ede0bb6ef53bc0b5da Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 17 Oct 2020 13:05:16 -0700
+Subject: [PATCH] WIP Initial support for pinecube
+
+---
+ arch/arm/dts/Makefile              |  3 +-
+ arch/arm/dts/sun8i-s3-pinecube.dts | 84 ++++++++++++++++++++++++++++++
+ arch/arm/mach-sunxi/Kconfig        |  4 +-
+ configs/pinecube_defconfig         | 12 +++++
+ 4 files changed, 99 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/dts/sun8i-s3-pinecube.dts
+ create mode 100644 configs/pinecube_defconfig
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 9900b44274..74cee045e6 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -563,7 +563,8 @@ dtb-$(CONFIG_MACH_SUN8I_R40) += \
+ 	sun8i-r40-bananapi-m2-ultra.dtb \
+ 	sun8i-v40-bananapi-m2-berry.dtb
+ dtb-$(CONFIG_MACH_SUN8I_V3S) += \
+-	sun8i-v3s-licheepi-zero.dtb
++	sun8i-v3s-licheepi-zero.dtb \
++	sun8i-s3-pinecube.dtb
+ dtb-$(CONFIG_MACH_SUN50I_H5) += \
+ 	sun50i-h5-bananapi-m2-plus.dtb \
+ 	sun50i-h5-emlid-neutis-n5-devboard.dtb \
+diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
+new file mode 100644
+index 0000000000..d686b81894
+--- /dev/null
++++ b/arch/arm/dts/sun8i-s3-pinecube.dts
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (C) 2020 Daniel Fullmer <danielrf12@gmail.com>
++ * Copyright (C) 2016 Icenowy Zheng <icenowy@aosc.xyz>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This file is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This file is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/dts-v1/;
++#include "sun8i-v3s.dtsi"
++#include "sunxi-common-regulators.dtsi"
++
++/ {
++	model = "Pine64 Pinecube";
++	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++};
++
++&mmc0 {
++	pinctrl-0 = <&mmc0_pins_a>;
++	pinctrl-names = "default";
++	broken-cd;
++	bus-width = <4>;
++	vmmc-supply = <&reg_vcc3v3>;
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-0 = <&uart0_pins_a>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbphy {
++	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index be0822bfb7..2257ef6eb1 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -357,13 +357,11 @@ config SUNXI_DRAM_LPDDR3
+ 
+ choice
+ 	prompt "DRAM Type and Timing"
+-	default SUNXI_DRAM_DDR3_1333 if !MACH_SUN8I_V3S
+-	default SUNXI_DRAM_DDR2_V3S if MACH_SUN8I_V3S
++	default SUNXI_DRAM_DDR3_1333
+ 
+ config SUNXI_DRAM_DDR3_1333
+ 	bool "DDR3 1333"
+ 	select SUNXI_DRAM_DDR3
+-	depends on !MACH_SUN8I_V3S
+ 	---help---
+ 	This option is the original only supported memory type, which suits
+ 	many H3/H5/A64 boards available now.
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+new file mode 100644
+index 0000000000..361c187f12
+--- /dev/null
++++ b/configs/pinecube_defconfig
+@@ -0,0 +1,12 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_V3S=y
++CONFIG_DRAM_CLK=360
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
++# CONFIG_NETDEVICES is not set
++
++# S3 uses DDR3
++CONFIG_SUNXI_DRAM_DDR3_133=y
++CONFIG_SUNXI_DRAM_DDR2=n
++CONFIG_SUNXI_DRAM_DDR2_V3S=n
+-- 
+2.28.0
+
