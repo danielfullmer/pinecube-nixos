@@ -70,7 +70,12 @@ dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
 Working fine in linux. U-boot needs support
 
 ## WIFI
-Not working
+Dmesg errors:
+```
+Oct 19 06:11:31 nixos wpa_supplicant[926]: Successfully initialized wpa_supplicant
+Oct 19 06:11:32 nixos kernel: sunxi-mmc 1c10000.mmc: data error, sending stop command
+Oct 19 06:11:32 nixos kernel: sunxi-mmc 1c10000.mmc: send stop command failed
+```
 
 ## Audio
 Is not in currently in DTB at all.

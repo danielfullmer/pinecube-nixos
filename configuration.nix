@@ -38,8 +38,22 @@ in
   # See: https://lore.kernel.org/patchwork/project/lkml/list/?submitter=22013&order=name
   boot.kernelPackages = pkgs.linuxPackages_5_9;
   boot.kernelPatches = [
-    { name = "pine64-pinecube"; patch = ./Pine64-PineCube-support.patch; }
+    { name = "pine64-pinecube";
+      patch = ./Pine64-PineCube-support.patch;
+      # sunxi_defconfig is missing wireless support
+      # TODO: Are all of these options needed here?
+      extraConfig = ''
+        CFG80211 m
+        WIRELESS y
+        WLAN y
+        RFKILL y
+        RFKILL_INPUT y
+        RFKILL_GPIO y
+      '';
+    }
   ];
+
+  boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];
 
   environment.systemPackages = with pkgs; [
     alsaUtils
