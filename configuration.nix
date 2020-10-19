@@ -59,6 +59,7 @@ in
     alsaUtils
     ffmpeg
     (v4l_utils.override { withGUI = false; })
+    usbutils
   ];
 
   ###

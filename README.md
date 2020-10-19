@@ -69,6 +69,10 @@ dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
 ## Ethernet
 Working fine in linux. U-boot needs support
 
+## USB
+Not working in linux or u-boot
+dmesg reports: `supply vcc not found, using dummy regulator`
+
 ## WIFI
 Dmesg errors:
 ```
