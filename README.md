@@ -17,9 +17,16 @@ Should be accessible over UART2 pins (see pinout on wiki) or SSH.
 ## Recording from CSI camera:
  - https://linux-sunxi.org/CSI#CSI_on_mainline_Linux_with_v4l2
  - https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/subdev-formats.html
+
+Streaming via rtmp:
 ```shell
-$ media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:YUYV8_2X8/640x480]'
-$ ffmpeg -s 640x480 -r 10 -i /dev/video0 -vcodec libx264 -preset ultrafast -tune zerolatency -f flv rtmp://192.168.1.200/live/pinecube
+$ media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:UYVY8_2X8/640x480@1/15]'
+$ ffmpeg -s 640x480 -r 15 -i /dev/video0 -vcodec flv -f flv rtmp://192.168.1.200/live/pinecube
+```
+
+On receiving machine:
+```shell
+$ mpv "rtmp://192.168.1.200/live/pinecube" --profile=low-latency --cache-secs=1
 ```
 
 ## Activating LEDs:
@@ -37,15 +44,36 @@ $ cat /sys/kernel/debug/pinctrl/1c20800.pinctrl/pinmux-pins
 ```
 gives information about pin numbering and what pins already claimed for other things
 
-Audio is not in currently in DTB at all.
-Maybe use sun7i-a20 as example. It has a "codec" block.
-See the S3 manual, grep for I2S/PCM.
+### Enabling/disabling IR-cut filter
+```shell
+# Export gpio, set direction
+$ echo 45 > /sys/class/gpio/export
+$ echo out > /sys/class/gpio/gpio45/direction
+
+# 1 to enable, 0 to disable
+$ echo 1 > /sys/class/gpio/gpio45/value
+```
+
+### Passive IR detection
+```shell
+# Export gpio, set direction
+$ echo 199 > /sys/class/gpio/export
+$ echo in > /sys/class/gpio/gpio199/direction
+
+# Returns 1 for presence, 0 for none
+$ cat /sys/class/gpio/gpio199/value
+```
 
 ## SPI NOR
 dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
 
+## Ethernet
+Working fine in linux. U-boot needs support
+
 ## WIFI
 Not working
 
-## Ethernet
-Working fine in linux. U-boot needs support
+## Audio
+Is not in currently in DTB at all.
+Maybe use sun7i-a20 as example. It has a "codec" block.
+See the S3 manual, grep for I2S/PCM.
