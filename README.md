@@ -28,10 +28,10 @@ On receiving machine:
 $ mpv "rtmp://192.168.1.200/live/pinecube" --profile=low-latency --cache-secs=1
 ```
 
-## Activating LEDs:
-https://elinux.org/CI20_GPIO_LED_Blink_Tutorial#Controlling_GPIOs_from_the_shell_.28Linux.27_sysfs_interface_for_GPIOs.29
+## Activating IR LEDs:
 ```shell
 $ echo 1 > /sys/class/leds/pine64\:ir\:led1/brightness
+$ echo 1 > /sys/class/leds/pine64\:ir\:led2/brightness
 ```
 (Except they seem to be reversed. Setting 0 brightness turns them on, setting 1 turns them off)
 Change it to `ACTIVE_HIGH` in dtb?
