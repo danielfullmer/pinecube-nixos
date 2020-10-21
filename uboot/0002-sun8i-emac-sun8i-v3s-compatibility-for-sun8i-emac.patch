@@ -1,0 +1,128 @@
+From 415ea55f47610b4181339e82ef310071b2c61340 Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Mon, 19 Oct 2020 22:50:57 -0700
+Subject: [PATCH 2/3] sun8i-emac: sun8i-v3s compatibility for sun8i-emac
+
+This patch expands the sun8i-emac driver to support the V3s.
+For this the CLK and RST gates for EMAC and EPHY were added in clk_v3s.c
+
+Based on original patch by Benedikt-Alexander Mokru?
+---
+ drivers/clk/sunxi/clk_v3s.c |  6 ++++++
+ drivers/net/sun8i_emac.c    | 15 +++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/clk/sunxi/clk_v3s.c b/drivers/clk/sunxi/clk_v3s.c
+index b79446cc4f..5215d73e5e 100644
+--- a/drivers/clk/sunxi/clk_v3s.c
++++ b/drivers/clk/sunxi/clk_v3s.c
+@@ -17,6 +17,7 @@ static struct ccu_clk_gate v3s_gates[] = {
+ 	[CLK_BUS_MMC0]		= GATE(0x060, BIT(8)),
+ 	[CLK_BUS_MMC1]		= GATE(0x060, BIT(9)),
+ 	[CLK_BUS_MMC2]		= GATE(0x060, BIT(10)),
++	[CLK_BUS_EMAC]		= GATE(0x060, BIT(17)),
+ 	[CLK_BUS_SPI0]		= GATE(0x060, BIT(20)),
+ 	[CLK_BUS_OTG]		= GATE(0x060, BIT(24)),
+ 
+@@ -24,6 +25,8 @@ static struct ccu_clk_gate v3s_gates[] = {
+ 	[CLK_BUS_UART1]		= GATE(0x06c, BIT(17)),
+ 	[CLK_BUS_UART2]		= GATE(0x06c, BIT(18)),
+ 
++	[CLK_BUS_EPHY]		= GATE(0x070, BIT(0)),
++
+ 	[CLK_SPI0]		= GATE(0x0a0, BIT(31)),
+ 
+ 	[CLK_USB_PHY0]          = GATE(0x0cc, BIT(8)),
+@@ -35,12 +38,15 @@ static struct ccu_reset v3s_resets[] = {
+ 	[RST_BUS_MMC0]		= RESET(0x2c0, BIT(8)),
+ 	[RST_BUS_MMC1]		= RESET(0x2c0, BIT(9)),
+ 	[RST_BUS_MMC2]		= RESET(0x2c0, BIT(10)),
++	[RST_BUS_EMAC]		= RESET(0x2c0, BIT(17)),
+ 	[RST_BUS_SPI0]		= RESET(0x2c0, BIT(20)),
+ 	[RST_BUS_OTG]		= RESET(0x2c0, BIT(24)),
+ 
+ 	[RST_BUS_UART0]		= RESET(0x2d8, BIT(16)),
+ 	[RST_BUS_UART1]		= RESET(0x2d8, BIT(17)),
+ 	[RST_BUS_UART2]		= RESET(0x2d8, BIT(18)),
++
++	[RST_BUS_EPHY]		= RESET(0x2c8, BIT(2)),
+ };
+ 
+ static const struct ccu_desc v3s_ccu_desc = {
+diff --git a/drivers/net/sun8i_emac.c b/drivers/net/sun8i_emac.c
+index e2b05ace8f..29d68d5c2d 100644
+--- a/drivers/net/sun8i_emac.c
++++ b/drivers/net/sun8i_emac.c
+@@ -56,9 +56,11 @@
+ #define RX_TOTAL_BUFSIZE	(CONFIG_ETH_BUFSIZE * CONFIG_RX_DESCR_NUM)
+ 
+ #define H3_EPHY_DEFAULT_VALUE	0x58000
++#define V3S_EPHY_DEFAULT_VALUE	0x38000
+ #define H3_EPHY_DEFAULT_MASK	GENMASK(31, 15)
+ #define H3_EPHY_ADDR_SHIFT	20
+ #define REG_PHY_ADDR_MASK	GENMASK(4, 0)
++#define H3_EPHY_CLK_SEL		BIT(18) /* 1: 24MHz, 0: 25MHz */
+ #define H3_EPHY_LED_POL		BIT(17)	/* 1: active low, 0: active high */
+ #define H3_EPHY_SHUTDOWN	BIT(16)	/* 1: shutdown, 0: power up */
+ #define H3_EPHY_SELECT		BIT(15) /* 1: internal PHY, 0: external PHY */
+@@ -112,6 +114,7 @@ enum emac_variant {
+ 	A64_EMAC,
+ 	R40_GMAC,
+ 	H6_EMAC,
++	V3S_EMAC,
+ };
+ 
+ struct emac_dma_desc {
+@@ -279,10 +282,11 @@ static int sun8i_emac_set_syscon_ephy(struct emac_eth_dev *priv, u32 *reg)
+ 		 * needs to be configured and powered up before use
+ 		*/
+ 		*reg &= ~H3_EPHY_DEFAULT_MASK;
+-		*reg |=  H3_EPHY_DEFAULT_VALUE;
++		*reg |= ((priv->variant == V3S_EMAC) ? V3S_EPHY_DEFAULT_VALUE :  H3_EPHY_DEFAULT_VALUE);
+ 		*reg |= priv->phyaddr << H3_EPHY_ADDR_SHIFT;
+ 		*reg &= ~H3_EPHY_SHUTDOWN;
+ 		*reg |= H3_EPHY_SELECT;
++		*reg |= H3_EPHY_CLK_SEL;
+ 	} else
+ 		/* This is to select External Gigabit PHY on
+ 		 * the boards with H3 SoC.
+@@ -311,7 +315,7 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
+ 
+ 	reg = readl(priv->sysctl_reg + 0x30);
+ 
+-	if (priv->variant == H3_EMAC || priv->variant == H6_EMAC) {
++	if (priv->variant == H3_EMAC || priv->variant == H6_EMAC || priv->variant == V3S_EMAC) {
+ 		ret = sun8i_emac_set_syscon_ephy(priv, &reg);
+ 		if (ret)
+ 			return ret;
+@@ -320,7 +324,8 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
+ 	reg &= ~(SC_ETCS_MASK | SC_EPIT);
+ 	if (priv->variant == H3_EMAC ||
+ 	    priv->variant == A64_EMAC ||
+-	    priv->variant == H6_EMAC)
++	    priv->variant == H6_EMAC ||
++	    priv->variant == V3S_EMAC)
+ 		reg &= ~SC_RMII_EN;
+ 
+ 	switch (priv->interface) {
+@@ -985,7 +990,7 @@ static int sun8i_emac_eth_ofdata_to_platdata(struct udevice *dev)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (priv->variant == H3_EMAC) {
++	if (priv->variant == H3_EMAC || priv->variant == V3S_EMAC) {
+ 		ret = sun8i_get_ephy_nodes(priv);
+ 		if (ret)
+ 			return ret;
+@@ -1038,6 +1043,8 @@ static const struct udevice_id sun8i_emac_eth_ids[] = {
+ 		.data = (uintptr_t)R40_GMAC },
+ 	{.compatible = "allwinner,sun50i-h6-emac",
+ 		.data = (uintptr_t)H6_EMAC },
++	{.compatible = "allwinner,sun8i-v3s-emac",
++		.data = (uintptr_t)V3S_EMAC },
+ 	{ }
+ };
+ 
+-- 
+2.28.0
+

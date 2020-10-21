@@ -1,13 +1,7 @@
 { config, lib, pkgs, ... }:
 
 let
-  uboot = pkgs.buildUBoot {
-    patches = [ ./0001-WIP-Initial-support-for-pinecube.patch ];
-
-    defconfig = "pinecube_defconfig";
-    extraMeta.platforms = ["armv7l-linux"];
-    filesToInstall = ["u-boot-sunxi-with-spl.bin"];
-  };
+  uboot = pkgs.callPackage ./uboot {};
 in
 {
   imports = [ <nixpkgs/nixos/modules/installer/cd-dvd/sd-image.nix> ];

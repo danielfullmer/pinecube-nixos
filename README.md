@@ -67,7 +67,7 @@ $ cat /sys/class/gpio/gpio199/value
 dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
 
 ## Ethernet
-Working fine in linux. U-boot needs support
+Working fine in linux, and now also u-boot with patch derived from: https://lists.denx.de/pipermail/u-boot/2020-May/413924.html
 
 ## USB
 Not working in linux or u-boot
