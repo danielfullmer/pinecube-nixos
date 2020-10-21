@@ -1,7 +1,7 @@
 # NixOS on Pinecube (Early work in progress)
 
 Build an SD card image with `./build.sh`.
-Prebuilt image [here](https://drive.google.com/file/d/11mBzfGHeLLP26nse0ntxUWxuBqUYKiIK/view?usp=sharing). (updated 2020-10-18)
+Prebuilt image [here](https://drive.google.com/file/d/1-nd6KbrBqaHCP2QHJ1iuGF-WUadhKajY/view?usp=sharing). (updated 2020-10-20)
 Decompress and flash with:
 ```shell
 $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd -d | dd of=/dev/<sdcard> bs=1024
