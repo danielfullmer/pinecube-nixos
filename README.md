@@ -33,8 +33,6 @@ $ mpv "rtmp://192.168.1.200/live/pinecube" --profile=low-latency --cache-secs=1
 $ echo 1 > /sys/class/leds/pine64\:ir\:led1/brightness
 $ echo 1 > /sys/class/leds/pine64\:ir\:led2/brightness
 ```
-(Except they seem to be reversed. Setting 0 brightness turns them on, setting 1 turns them off)
-Change it to `ACTIVE_HIGH` in dtb?
 
 ## GPIO:
 https://linux-sunxi.org/GPIO

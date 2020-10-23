@@ -33,7 +33,7 @@ in
   boot.kernelPackages = pkgs.linuxPackages_5_9;
   boot.kernelPatches = [
     { name = "pine64-pinecube";
-      patch = ./Pine64-PineCube-support.patch;
+      patch = ./kernel/Pine64-PineCube-support.patch;
       # sunxi_defconfig is missing wireless support
       # TODO: Are all of these options needed here?
       extraConfig = ''
@@ -45,6 +45,7 @@ in
         RFKILL_GPIO y
       '';
     }
+    { name = "pinecube-ir-leds"; patch = ./kernel/0001-ARM-dts-sun8i-s3l-fix-Pinecube-IR-LEDs.patch; }
   ];
 
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];

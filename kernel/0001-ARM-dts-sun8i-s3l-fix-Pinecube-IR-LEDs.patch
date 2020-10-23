@@ -1,0 +1,32 @@
+From 7ad2976267f04f3b29327e470c9698bd689775d8 Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Fri, 23 Oct 2020 16:04:15 -0700
+Subject: [PATCH 1/2] ARM: dts: sun8i: s3l: fix Pinecube IR LEDs
+
+Signed-off-by: Daniel Fullmer <danielrf12@gmail.com>
+---
+ arch/arm/boot/dts/sun8i-s3-pinecube.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
+index 9bab6b7f4014..a4adf52ef406 100644
+--- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
++++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
+@@ -25,12 +25,12 @@ leds {
+ 
+ 		led1 {
+ 			label = "pine64:ir:led1";
+-			gpios = <&pio 1 10 GPIO_ACTIVE_LOW>; /* PB10 */
++			gpios = <&pio 1 10 GPIO_ACTIVE_HIGH>; /* PB10 */
+ 		};
+ 
+ 		led2 {
+ 			label = "pine64:ir:led2";
+-			gpios = <&pio 1 12 GPIO_ACTIVE_LOW>; /* PB12 */
++			gpios = <&pio 1 12 GPIO_ACTIVE_HIGH>; /* PB12 */
+ 		};
+ 	};
+ 
+-- 
+2.28.0
+
