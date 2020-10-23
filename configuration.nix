@@ -46,6 +46,7 @@ in
       '';
     }
     { name = "pinecube-ir-leds"; patch = ./kernel/0001-ARM-dts-sun8i-s3l-fix-Pinecube-IR-LEDs.patch; }
+    { name = "pinecube-add-battery"; patch = ./kernel/0002-ARM-dts-sun8i-s3l-add-battery-power-supply-to-pinecu.patch; }
   ];
 
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];

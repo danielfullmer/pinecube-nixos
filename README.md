@@ -83,3 +83,9 @@ Oct 19 06:11:32 nixos kernel: sunxi-mmc 1c10000.mmc: send stop command failed
 Is not in currently in DTB at all.
 Maybe use sun7i-a20 as example. It has a "codec" block.
 See the S3 manual, grep for I2S/PCM.
+
+## Power Supply
+See `/sys/class/power_supply/axp20x-ac`.
+See `/sys/class/power_supply/axp20x-battery/{status,capacity}`.
+Green LED if power is on.
+Red LED if battery is charging.
