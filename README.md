@@ -62,7 +62,20 @@ $ cat /sys/class/gpio/gpio199/value
 ```
 
 ## SPI NOR
-dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
+In Linux, dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
+The published schematic says it's a `GD5F4GQ4UCYIG`, however the label on the pinecube I have is for an `XT25F128B`.
+And this matches the JEDEC bytes reported in Linux.
+
+### SPI Boot
+Run `nix-build -A firmware-installer`. Then,
+```shell
+$ dd if=result/firmware-installer-image.img of=/dev/sdX bs=1024
+```
+Then, use the menu option available over UART0 to install u-boot to the SPI.
+
+I initially flashed a bad u-boot, which caused me to be unable to boot from MMC or even FEL.
+I was able to force the Pinecube to load into FEL by grounding the `SPI0_MISO` pin.
+Then, I could boot into u-boot and erase the SPI, returning the Pinecube to factory condition.
 
 ## Ethernet
 Working fine in linux, and now also u-boot with patch derived from: https://lists.denx.de/pipermail/u-boot/2020-May/413924.html

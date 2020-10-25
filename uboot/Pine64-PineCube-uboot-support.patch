@@ -1,0 +1,605 @@
+From 9c657a26092f58815a7f68ede0bb6ef53bc0b5da Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 17 Oct 2020 13:05:16 -0700
+Subject: [PATCH 1/7] WIP Initial support for pinecube
+
+---
+ arch/arm/dts/Makefile              |  3 +-
+ arch/arm/dts/sun8i-s3-pinecube.dts | 84 ++++++++++++++++++++++++++++++
+ arch/arm/mach-sunxi/Kconfig        |  4 +-
+ configs/pinecube_defconfig         | 12 +++++
+ 4 files changed, 99 insertions(+), 4 deletions(-)
+ create mode 100644 arch/arm/dts/sun8i-s3-pinecube.dts
+ create mode 100644 configs/pinecube_defconfig
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 9900b44274..74cee045e6 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -563,7 +563,8 @@ dtb-$(CONFIG_MACH_SUN8I_R40) += \
+ 	sun8i-r40-bananapi-m2-ultra.dtb \
+ 	sun8i-v40-bananapi-m2-berry.dtb
+ dtb-$(CONFIG_MACH_SUN8I_V3S) += \
+-	sun8i-v3s-licheepi-zero.dtb
++	sun8i-v3s-licheepi-zero.dtb \
++	sun8i-s3-pinecube.dtb
+ dtb-$(CONFIG_MACH_SUN50I_H5) += \
+ 	sun50i-h5-bananapi-m2-plus.dtb \
+ 	sun50i-h5-emlid-neutis-n5-devboard.dtb \
+diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
+new file mode 100644
+index 0000000000..d686b81894
+--- /dev/null
++++ b/arch/arm/dts/sun8i-s3-pinecube.dts
+@@ -0,0 +1,84 @@
++/*
++ * Copyright (C) 2020 Daniel Fullmer <danielrf12@gmail.com>
++ * Copyright (C) 2016 Icenowy Zheng <icenowy@aosc.xyz>
++ *
++ * This file is dual-licensed: you can use it either under the terms
++ * of the GPL or the X11 license, at your option. Note that this dual
++ * licensing only applies to this file, and not this project as a
++ * whole.
++ *
++ *  a) This file is free software; you can redistribute it and/or
++ *     modify it under the terms of the GNU General Public License as
++ *     published by the Free Software Foundation; either version 2 of the
++ *     License, or (at your option) any later version.
++ *
++ *     This file is distributed in the hope that it will be useful,
++ *     but WITHOUT ANY WARRANTY; without even the implied warranty of
++ *     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ *     GNU General Public License for more details.
++ *
++ * Or, alternatively,
++ *
++ *  b) Permission is hereby granted, free of charge, to any person
++ *     obtaining a copy of this software and associated documentation
++ *     files (the "Software"), to deal in the Software without
++ *     restriction, including without limitation the rights to use,
++ *     copy, modify, merge, publish, distribute, sublicense, and/or
++ *     sell copies of the Software, and to permit persons to whom the
++ *     Software is furnished to do so, subject to the following
++ *     conditions:
++ *
++ *     The above copyright notice and this permission notice shall be
++ *     included in all copies or substantial portions of the Software.
++ *
++ *     THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
++ *     EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
++ *     OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
++ *     NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
++ *     HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
++ *     WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ *     FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
++ *     OTHER DEALINGS IN THE SOFTWARE.
++ */
++
++/dts-v1/;
++#include "sun8i-v3s.dtsi"
++#include "sunxi-common-regulators.dtsi"
++
++/ {
++	model = "Pine64 Pinecube";
++	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++};
++
++&mmc0 {
++	pinctrl-0 = <&mmc0_pins_a>;
++	pinctrl-names = "default";
++	broken-cd;
++	bus-width = <4>;
++	vmmc-supply = <&reg_vcc3v3>;
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-0 = <&uart0_pins_a>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "otg";
++	status = "okay";
++};
++
++&usbphy {
++	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index be0822bfb7..2257ef6eb1 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -357,13 +357,11 @@ config SUNXI_DRAM_LPDDR3
+ 
+ choice
+ 	prompt "DRAM Type and Timing"
+-	default SUNXI_DRAM_DDR3_1333 if !MACH_SUN8I_V3S
+-	default SUNXI_DRAM_DDR2_V3S if MACH_SUN8I_V3S
++	default SUNXI_DRAM_DDR3_1333
+ 
+ config SUNXI_DRAM_DDR3_1333
+ 	bool "DDR3 1333"
+ 	select SUNXI_DRAM_DDR3
+-	depends on !MACH_SUN8I_V3S
+ 	---help---
+ 	This option is the original only supported memory type, which suits
+ 	many H3/H5/A64 boards available now.
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+new file mode 100644
+index 0000000000..361c187f12
+--- /dev/null
++++ b/configs/pinecube_defconfig
+@@ -0,0 +1,12 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_V3S=y
++CONFIG_DRAM_CLK=360
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
++# CONFIG_NETDEVICES is not set
++
++# S3 uses DDR3
++CONFIG_SUNXI_DRAM_DDR3_133=y
++CONFIG_SUNXI_DRAM_DDR2=n
++CONFIG_SUNXI_DRAM_DDR2_V3S=n
+-- 
+2.28.0
+
+
+From 415ea55f47610b4181339e82ef310071b2c61340 Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Mon, 19 Oct 2020 22:50:57 -0700
+Subject: [PATCH 2/7] sun8i-emac: sun8i-v3s compatibility for sun8i-emac
+
+This patch expands the sun8i-emac driver to support the V3s.
+For this the CLK and RST gates for EMAC and EPHY were added in clk_v3s.c
+
+Based on original patch by Benedikt-Alexander Mokru?
+---
+ drivers/clk/sunxi/clk_v3s.c |  6 ++++++
+ drivers/net/sun8i_emac.c    | 15 +++++++++++----
+ 2 files changed, 17 insertions(+), 4 deletions(-)
+
+diff --git a/drivers/clk/sunxi/clk_v3s.c b/drivers/clk/sunxi/clk_v3s.c
+index b79446cc4f..5215d73e5e 100644
+--- a/drivers/clk/sunxi/clk_v3s.c
++++ b/drivers/clk/sunxi/clk_v3s.c
+@@ -17,6 +17,7 @@ static struct ccu_clk_gate v3s_gates[] = {
+ 	[CLK_BUS_MMC0]		= GATE(0x060, BIT(8)),
+ 	[CLK_BUS_MMC1]		= GATE(0x060, BIT(9)),
+ 	[CLK_BUS_MMC2]		= GATE(0x060, BIT(10)),
++	[CLK_BUS_EMAC]		= GATE(0x060, BIT(17)),
+ 	[CLK_BUS_SPI0]		= GATE(0x060, BIT(20)),
+ 	[CLK_BUS_OTG]		= GATE(0x060, BIT(24)),
+ 
+@@ -24,6 +25,8 @@ static struct ccu_clk_gate v3s_gates[] = {
+ 	[CLK_BUS_UART1]		= GATE(0x06c, BIT(17)),
+ 	[CLK_BUS_UART2]		= GATE(0x06c, BIT(18)),
+ 
++	[CLK_BUS_EPHY]		= GATE(0x070, BIT(0)),
++
+ 	[CLK_SPI0]		= GATE(0x0a0, BIT(31)),
+ 
+ 	[CLK_USB_PHY0]          = GATE(0x0cc, BIT(8)),
+@@ -35,12 +38,15 @@ static struct ccu_reset v3s_resets[] = {
+ 	[RST_BUS_MMC0]		= RESET(0x2c0, BIT(8)),
+ 	[RST_BUS_MMC1]		= RESET(0x2c0, BIT(9)),
+ 	[RST_BUS_MMC2]		= RESET(0x2c0, BIT(10)),
++	[RST_BUS_EMAC]		= RESET(0x2c0, BIT(17)),
+ 	[RST_BUS_SPI0]		= RESET(0x2c0, BIT(20)),
+ 	[RST_BUS_OTG]		= RESET(0x2c0, BIT(24)),
+ 
+ 	[RST_BUS_UART0]		= RESET(0x2d8, BIT(16)),
+ 	[RST_BUS_UART1]		= RESET(0x2d8, BIT(17)),
+ 	[RST_BUS_UART2]		= RESET(0x2d8, BIT(18)),
++
++	[RST_BUS_EPHY]		= RESET(0x2c8, BIT(2)),
+ };
+ 
+ static const struct ccu_desc v3s_ccu_desc = {
+diff --git a/drivers/net/sun8i_emac.c b/drivers/net/sun8i_emac.c
+index e2b05ace8f..29d68d5c2d 100644
+--- a/drivers/net/sun8i_emac.c
++++ b/drivers/net/sun8i_emac.c
+@@ -56,9 +56,11 @@
+ #define RX_TOTAL_BUFSIZE	(CONFIG_ETH_BUFSIZE * CONFIG_RX_DESCR_NUM)
+ 
+ #define H3_EPHY_DEFAULT_VALUE	0x58000
++#define V3S_EPHY_DEFAULT_VALUE	0x38000
+ #define H3_EPHY_DEFAULT_MASK	GENMASK(31, 15)
+ #define H3_EPHY_ADDR_SHIFT	20
+ #define REG_PHY_ADDR_MASK	GENMASK(4, 0)
++#define H3_EPHY_CLK_SEL		BIT(18) /* 1: 24MHz, 0: 25MHz */
+ #define H3_EPHY_LED_POL		BIT(17)	/* 1: active low, 0: active high */
+ #define H3_EPHY_SHUTDOWN	BIT(16)	/* 1: shutdown, 0: power up */
+ #define H3_EPHY_SELECT		BIT(15) /* 1: internal PHY, 0: external PHY */
+@@ -112,6 +114,7 @@ enum emac_variant {
+ 	A64_EMAC,
+ 	R40_GMAC,
+ 	H6_EMAC,
++	V3S_EMAC,
+ };
+ 
+ struct emac_dma_desc {
+@@ -279,10 +282,11 @@ static int sun8i_emac_set_syscon_ephy(struct emac_eth_dev *priv, u32 *reg)
+ 		 * needs to be configured and powered up before use
+ 		*/
+ 		*reg &= ~H3_EPHY_DEFAULT_MASK;
+-		*reg |=  H3_EPHY_DEFAULT_VALUE;
++		*reg |= ((priv->variant == V3S_EMAC) ? V3S_EPHY_DEFAULT_VALUE :  H3_EPHY_DEFAULT_VALUE);
+ 		*reg |= priv->phyaddr << H3_EPHY_ADDR_SHIFT;
+ 		*reg &= ~H3_EPHY_SHUTDOWN;
+ 		*reg |= H3_EPHY_SELECT;
++		*reg |= H3_EPHY_CLK_SEL;
+ 	} else
+ 		/* This is to select External Gigabit PHY on
+ 		 * the boards with H3 SoC.
+@@ -311,7 +315,7 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
+ 
+ 	reg = readl(priv->sysctl_reg + 0x30);
+ 
+-	if (priv->variant == H3_EMAC || priv->variant == H6_EMAC) {
++	if (priv->variant == H3_EMAC || priv->variant == H6_EMAC || priv->variant == V3S_EMAC) {
+ 		ret = sun8i_emac_set_syscon_ephy(priv, &reg);
+ 		if (ret)
+ 			return ret;
+@@ -320,7 +324,8 @@ static int sun8i_emac_set_syscon(struct sun8i_eth_pdata *pdata,
+ 	reg &= ~(SC_ETCS_MASK | SC_EPIT);
+ 	if (priv->variant == H3_EMAC ||
+ 	    priv->variant == A64_EMAC ||
+-	    priv->variant == H6_EMAC)
++	    priv->variant == H6_EMAC ||
++	    priv->variant == V3S_EMAC)
+ 		reg &= ~SC_RMII_EN;
+ 
+ 	switch (priv->interface) {
+@@ -985,7 +990,7 @@ static int sun8i_emac_eth_ofdata_to_platdata(struct udevice *dev)
+ 		return -EINVAL;
+ 	}
+ 
+-	if (priv->variant == H3_EMAC) {
++	if (priv->variant == H3_EMAC || priv->variant == V3S_EMAC) {
+ 		ret = sun8i_get_ephy_nodes(priv);
+ 		if (ret)
+ 			return ret;
+@@ -1038,6 +1043,8 @@ static const struct udevice_id sun8i_emac_eth_ids[] = {
+ 		.data = (uintptr_t)R40_GMAC },
+ 	{.compatible = "allwinner,sun50i-h6-emac",
+ 		.data = (uintptr_t)H6_EMAC },
++	{.compatible = "allwinner,sun8i-v3s-emac",
++		.data = (uintptr_t)V3S_EMAC },
+ 	{ }
+ };
+ 
+-- 
+2.28.0
+
+
+From 876e12488bfd1ee18ad0f17d1cee09ba24bfab6a Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Tue, 20 Oct 2020 18:09:34 -0700
+Subject: [PATCH 3/7] pinecube: Add ethernet support
+
+---
+ arch/arm/dts/sun8i-s3-pinecube.dts |  5 +++
+ arch/arm/dts/sun8i-v3s.dtsi        | 53 ++++++++++++++++++++++++++++++
+ configs/pinecube_defconfig         |  7 +---
+ 3 files changed, 59 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
+index d686b81894..16f9eea45b 100644
+--- a/arch/arm/dts/sun8i-s3-pinecube.dts
++++ b/arch/arm/dts/sun8i-s3-pinecube.dts
+@@ -50,6 +50,7 @@
+ 	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
+ 
+ 	aliases {
++		ethernet0 = &emac;
+ 		serial0 = &uart0;
+ 	};
+ 
+@@ -82,3 +83,7 @@
+ 	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
+ 	status = "okay";
+ };
++
++&emac {
++	status = "okay";
++};
+diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
+index ebefc0fefe..2a18ff0706 100644
+--- a/arch/arm/dts/sun8i-v3s.dtsi
++++ b/arch/arm/dts/sun8i-v3s.dtsi
+@@ -96,6 +96,16 @@
+ 		#size-cells = <1>;
+ 		ranges;
+ 
++		syscon: system-control@1c00000 {
++			compatible = "allwinner,sun8i-v3s-system-control",
++				     "allwinner,sun8i-h3-system-control";
++			reg = <0x01c00000 0x1000>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++		};
++
++
+ 		mmc0: mmc@01c0f000 {
+ 			compatible = "allwinner,sun7i-a20-mmc";
+ 			reg = <0x01c0f000 0x1000>;
+@@ -270,6 +280,49 @@
+ 			status = "disabled";
+ 		};
+ 
++		emac: ethernet@1c30000 {
++			compatible = "allwinner,sun8i-v3s-emac";
++			syscon = <&syscon>;
++			reg = <0x01c30000 0x10000>;
++			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "macirq";
++			resets = <&ccu RST_BUS_EMAC>;
++			reset-names = "stmmaceth";
++			clocks = <&ccu CLK_BUS_EMAC>;
++			clock-names = "stmmaceth";
++			phy-handle = <&int_mii_phy>;
++			phy-mode = "mii";
++			status = "disabled";
++
++			mdio: mdio {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "snps,dwmac-mdio";
++			};
++
++			mdio_mux: mdio-mux {
++				compatible = "allwinner,sun8i-h3-mdio-mux";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				mdio-parent-bus = <&mdio>;
++				/* Only one MDIO is usable at the time */
++				internal_mdio: mdio@1 {
++					compatible = "allwinner,sun8i-h3-mdio-internal";
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					int_mii_phy: ethernet-phy@1 {
++						compatible = "ethernet-phy-ieee802.3-c22";
++						reg = <1>;
++						clocks = <&ccu CLK_BUS_EPHY>;
++						resets = <&ccu RST_BUS_EPHY>;
++					};
++				};
++			};
++		};
++
+ 		gic: interrupt-controller@01c81000 {
+ 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
+ 			reg = <0x01c81000 0x1000>,
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+index 361c187f12..ae71219296 100644
+--- a/configs/pinecube_defconfig
++++ b/configs/pinecube_defconfig
+@@ -4,9 +4,4 @@ CONFIG_SPL=y
+ CONFIG_MACH_SUN8I_V3S=y
+ CONFIG_DRAM_CLK=360
+ CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
+-# CONFIG_NETDEVICES is not set
+-
+-# S3 uses DDR3
+-CONFIG_SUNXI_DRAM_DDR3_133=y
+-CONFIG_SUNXI_DRAM_DDR2=n
+-CONFIG_SUNXI_DRAM_DDR2_V3S=n
++CONFIG_SUN8I_EMAC=y
+-- 
+2.28.0
+
+
+From 3bf313c5dea08e53becf8830cfb90482fe2bc2ba Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 24 Oct 2020 17:21:51 -0700
+Subject: [PATCH 4/7] mtd: spi-nor-ids: add XTX xt25f32b/xt25f128b flash
+
+---
+ drivers/mtd/spi/Kconfig       | 6 ++++++
+ drivers/mtd/spi/spi-nor-ids.c | 5 +++++
+ 2 files changed, 11 insertions(+)
+
+diff --git a/drivers/mtd/spi/Kconfig b/drivers/mtd/spi/Kconfig
+index 018e8c597e..a57f5aa2e7 100644
+--- a/drivers/mtd/spi/Kconfig
++++ b/drivers/mtd/spi/Kconfig
+@@ -152,6 +152,12 @@ config SPI_FLASH_XMC
+ 	  Add support for various XMC (Wuhan Xinxin Semiconductor
+ 	  Manufacturing Corp.) SPI flash chips (XM25xxx)
+ 
++config SPI_FLASH_XTX
++	bool "XTX SPI flash support"
++	help
++	  Add support for various XTX (Wuhan Xinxin Semiconductor
++	  Manufacturing Corp.) SPI flash chips (XTX25FxxxB)
++
+ endif
+ 
+ config SPI_FLASH_USE_4K_SECTORS
+diff --git a/drivers/mtd/spi/spi-nor-ids.c b/drivers/mtd/spi/spi-nor-ids.c
+index 114ebacde1..e470ba24bd 100644
+--- a/drivers/mtd/spi/spi-nor-ids.c
++++ b/drivers/mtd/spi/spi-nor-ids.c
+@@ -319,6 +319,11 @@ const struct flash_info spi_nor_ids[] = {
+ 	/* XMC (Wuhan Xinxin Semiconductor Manufacturing Corp.) */
+ 	{ INFO("XM25QH64A", 0x207017, 0, 64 * 1024, 128, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+ 	{ INFO("XM25QH128A", 0x207018, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
++#endif
++#ifdef CONFIG_SPI_FLASH_XTX
++	/* XTX (Shenzhen Xin Tian Xia Tech) */
++	{ INFO("xt25f32b", 0x0b4016, 0, 64 * 1024, 64, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
++	{ INFO("xt25f128b", 0x0b4018, 0, 64 * 1024, 256, SECT_4K | SPI_NOR_DUAL_READ | SPI_NOR_QUAD_READ) },
+ #endif
+ 	{ },
+ };
+-- 
+2.28.0
+
+
+From 2c76dbcf461e431d098c68959f7a3161345f1a67 Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 24 Oct 2020 19:13:12 -0700
+Subject: [PATCH 5/7] sun8i-v3s: enable SPL_SPI_SUNXI
+
+---
+ arch/arm/mach-sunxi/Kconfig | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index 2257ef6eb1..cce88182e1 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -992,7 +992,7 @@ config SPL_STACK_R_ADDR
+ 
+ config SPL_SPI_SUNXI
+ 	bool "Support for SPI Flash on Allwinner SoCs in SPL"
+-	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_R40 || MACH_SUN50I_H6
++	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_R40 || MACH_SUN8I_V3S || MACH_SUN50I_H6
+ 	help
+ 	  Enable support for SPI Flash. This option allows SPL to read from
+ 	  sunxi SPI Flash. It uses the same method as the boot ROM, so does
+-- 
+2.28.0
+
+
+From dca7bd484c116df875812ad7441394f96a34cac0 Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 24 Oct 2020 17:59:20 -0700
+Subject: [PATCH 6/7] pinecube: add SPI boot support
+
+---
+ arch/arm/dts/sun8i-s3-pinecube.dts | 14 ++++++++++++++
+ arch/arm/dts/sun8i-v3s.dtsi        | 20 ++++++++++++++++++++
+ configs/pinecube_defconfig         |  7 +++++++
+ 3 files changed, 41 insertions(+)
+
+diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
+index 16f9eea45b..618d64a5a9 100644
+--- a/arch/arm/dts/sun8i-s3-pinecube.dts
++++ b/arch/arm/dts/sun8i-s3-pinecube.dts
+@@ -52,6 +52,7 @@
+ 	aliases {
+ 		ethernet0 = &emac;
+ 		serial0 = &uart0;
++		spi0 = &spi0;
+ 	};
+ 
+ 	chosen {
+@@ -87,3 +88,16 @@
+ &emac {
+ 	status = "okay";
+ };
++
++&spi0 {
++	status = "okay";
++
++	flash@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "xtx,xt25f128b", "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <40000000>;
++	};
++};
++
+diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
+index 2a18ff0706..8156442b79 100644
+--- a/arch/arm/dts/sun8i-v3s.dtsi
++++ b/arch/arm/dts/sun8i-v3s.dtsi
+@@ -231,6 +231,11 @@
+ 				drive-strength = <30>;
+ 				bias-pull-up;
+ 			};
++
++			spi0_pins: spi0-pins {
++				pins = "PC0", "PC1", "PC2", "PC3";
++				function = "spi0";
++			};
+ 		};
+ 
+ 		timer@01c20c00 {
+@@ -323,6 +328,21 @@
+ 			};
+ 		};
+ 
++		spi0: spi@1c68000 {
++			compatible = "allwinner,sun8i-h3-spi";
++			reg = <0x01c68000 0x1000>;
++			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_SPI0>, <&ccu CLK_SPI0>;
++			clock-names = "ahb", "mod";
++			pinctrl-names = "default";
++			pinctrl-0 = <&spi0_pins>;
++			resets = <&ccu RST_BUS_SPI0>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++
+ 		gic: interrupt-controller@01c81000 {
+ 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
+ 			reg = <0x01c81000 0x1000>,
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+index ae71219296..95694aa568 100644
+--- a/configs/pinecube_defconfig
++++ b/configs/pinecube_defconfig
+@@ -3,5 +3,12 @@ CONFIG_ARCH_SUNXI=y
+ CONFIG_SPL=y
+ CONFIG_MACH_SUN8I_V3S=y
+ CONFIG_DRAM_CLK=360
++CONFIG_SPL_SPI_SUNXI=y
+ CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
++CONFIG_DM_MTD=y
++CONFIG_DM_SPI_FLASH=y
++CONFIG_SPI_FLASH_SFDP_SUPPORT=y
++CONFIG_SPI_FLASH_XTX=y
+ CONFIG_SUN8I_EMAC=y
++CONFIG_SPI=y
++CONFIG_DM_SPI=y
+-- 
+2.28.0
+
+
+From 0804051f3011e001296d0838e332aa352e99742a Mon Sep 17 00:00:00 2001
+From: Daniel Fullmer <danielrf12@gmail.com>
+Date: Sat, 24 Oct 2020 19:06:45 -0700
+Subject: [PATCH 7/7] pinecube: enable bootcmd
+
+---
+ configs/pinecube_defconfig | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+index 95694aa568..11501b3eb4 100644
+--- a/configs/pinecube_defconfig
++++ b/configs/pinecube_defconfig
+@@ -4,6 +4,7 @@ CONFIG_SPL=y
+ CONFIG_MACH_SUN8I_V3S=y
+ CONFIG_DRAM_CLK=360
+ CONFIG_SPL_SPI_SUNXI=y
++CONFIG_CMD_BOOTMENU=y
+ CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
+ CONFIG_DM_MTD=y
+ CONFIG_DM_SPI_FLASH=y
+-- 
+2.28.0
+
