@@ -1,39 +1,544 @@
-From 9c657a26092f58815a7f68ede0bb6ef53bc0b5da Mon Sep 17 00:00:00 2001
-From: Daniel Fullmer <danielrf12@gmail.com>
-Date: Sat, 17 Oct 2020 13:05:16 -0700
-Subject: [PATCH 1/7] WIP Initial support for pinecube
+From 8d78ca668de85ffcc6db523e87867475aee2a7a3 Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:15:59 +0800
+Subject: [PATCH 1/9] sunxi: add V3/S3 support
 
+Allwinner V3/Sochip S3 uses the same die with Allwinner V3s/S3L, but V3 comes
+with no co-packaged DDR (DDR3 is usually used externally), and S3L comes
+with co-packaged DDR3.
+
+Add support for Allwinner V3/S3 chips by add SoC names to original V3s
+choice, and allow to select DDR3.
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
 ---
- arch/arm/dts/Makefile              |  3 +-
- arch/arm/dts/sun8i-s3-pinecube.dts | 84 ++++++++++++++++++++++++++++++
- arch/arm/mach-sunxi/Kconfig        |  4 +-
- configs/pinecube_defconfig         | 12 +++++
- 4 files changed, 99 insertions(+), 4 deletions(-)
- create mode 100644 arch/arm/dts/sun8i-s3-pinecube.dts
- create mode 100644 configs/pinecube_defconfig
+ arch/arm/mach-sunxi/Kconfig | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
-index 9900b44274..74cee045e6 100644
---- a/arch/arm/dts/Makefile
-+++ b/arch/arm/dts/Makefile
-@@ -563,7 +563,8 @@ dtb-$(CONFIG_MACH_SUN8I_R40) += \
- 	sun8i-r40-bananapi-m2-ultra.dtb \
- 	sun8i-v40-bananapi-m2-berry.dtb
- dtb-$(CONFIG_MACH_SUN8I_V3S) += \
--	sun8i-v3s-licheepi-zero.dtb
-+	sun8i-v3s-licheepi-zero.dtb \
-+	sun8i-s3-pinecube.dtb
- dtb-$(CONFIG_MACH_SUN50I_H5) += \
- 	sun50i-h5-bananapi-m2-plus.dtb \
- 	sun50i-h5-emlid-neutis-n5-devboard.dtb \
+diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
+index be0822bfb7..31339ac2a1 100644
+--- a/arch/arm/mach-sunxi/Kconfig
++++ b/arch/arm/mach-sunxi/Kconfig
+@@ -253,7 +253,7 @@ config MACH_SUN8I_R40
+ 	select PHY_SUN4I_USB
+ 
+ config MACH_SUN8I_V3S
+-	bool "sun8i (Allwinner V3s)"
++	bool "sun8i (Allwinner V3/V3s/S3/S3L)"
+ 	select CPU_V7A
+ 	select CPU_V7_HAS_NONSEC
+ 	select CPU_V7_HAS_VIRT
+@@ -363,7 +363,6 @@ choice
+ config SUNXI_DRAM_DDR3_1333
+ 	bool "DDR3 1333"
+ 	select SUNXI_DRAM_DDR3
+-	depends on !MACH_SUN8I_V3S
+ 	---help---
+ 	This option is the original only supported memory type, which suits
+ 	many H3/H5/A64 boards available now.
+-- 
+2.28.0
+
+
+From 11de589ef2bcca811e936b75bb6c28ab1fbfbca1 Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:18:01 +0800
+Subject: [PATCH 2/9] sunxi: gpio: introduce compatible string for V3 GPIO
+
+A new compatible string is introduced for V3 GPIO, because it has more
+pins available than V3s.
+
+Add the compatible string to the GPIO driver.
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
+---
+ drivers/gpio/sunxi_gpio.c | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/drivers/gpio/sunxi_gpio.c b/drivers/gpio/sunxi_gpio.c
+index 9c3a4428e1..0329efab50 100644
+--- a/drivers/gpio/sunxi_gpio.c
++++ b/drivers/gpio/sunxi_gpio.c
+@@ -351,6 +351,7 @@ static const struct udevice_id sunxi_gpio_ids[] = {
+ 	ID("allwinner,sun8i-a83t-pinctrl",	a_all),
+ 	ID("allwinner,sun8i-h3-pinctrl",	a_all),
+ 	ID("allwinner,sun8i-r40-pinctrl",	a_all),
++	ID("allwinner,sun8i-v3-pinctrl",	a_all),
+ 	ID("allwinner,sun8i-v3s-pinctrl",	a_all),
+ 	ID("allwinner,sun9i-a80-pinctrl",	a_all),
+ 	ID("allwinner,sun50i-a64-pinctrl",	a_all),
+-- 
+2.28.0
+
+
+From 861a94b8a7d6c308d03e24328769da3406f8def8 Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:18:02 +0800
+Subject: [PATCH 3/9] clk: sunxi: add compatible string for V3
+
+A new compatible string is introduced for V3 CCU, because it has a few
+extra features available.
+
+Add the compatible string to the clock driver. As the extra features are
+not touched, just share the description struct now.
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
+---
+ drivers/clk/sunxi/clk_v3s.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/drivers/clk/sunxi/clk_v3s.c b/drivers/clk/sunxi/clk_v3s.c
+index b79446cc4f..f3fc06ab31 100644
+--- a/drivers/clk/sunxi/clk_v3s.c
++++ b/drivers/clk/sunxi/clk_v3s.c
+@@ -56,6 +56,8 @@ static int v3s_clk_bind(struct udevice *dev)
+ static const struct udevice_id v3s_clk_ids[] = {
+ 	{ .compatible = "allwinner,sun8i-v3s-ccu",
+ 	  .data = (ulong)&v3s_ccu_desc },
++	{ .compatible = "allwinner,sun8i-v3-ccu",
++	  .data = (ulong)&v3s_ccu_desc },
+ 	{ }
+ };
+ 
+-- 
+2.28.0
+
+
+From ea527e363442b93e55e129eb89aa4e42691a3aec Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:19:34 +0800
+Subject: [PATCH 4/9] sunxi: allow to use AXP20[39] attached to I2C0 on V3
+ series
+
+The reference design of Allwinner V3 series uses an
+AXP203 or AXP209 PMIC attached to the I2C0 bus of the SoC, although the
+first community-available V3s board, Lichee Pi Zero, omitted it.
+
+Allow to introduce support for the PMIC on boards with it.
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
+---
+ arch/arm/include/asm/arch-sunxi/gpio.h | 1 +
+ board/sunxi/board.c                    | 4 ++++
+ drivers/power/Kconfig                  | 4 ++--
+ 3 files changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm/include/asm/arch-sunxi/gpio.h b/arch/arm/include/asm/arch-sunxi/gpio.h
+index a646ea6a3c..f817d328f4 100644
+--- a/arch/arm/include/asm/arch-sunxi/gpio.h
++++ b/arch/arm/include/asm/arch-sunxi/gpio.h
+@@ -158,6 +158,7 @@ enum sunxi_gpio_number {
+ #define SUN5I_GPB_TWI1		2
+ #define SUN4I_GPB_TWI2		2
+ #define SUN5I_GPB_TWI2		2
++#define SUN8I_V3S_GPB_TWI0	2
+ #define SUN4I_GPB_UART0		2
+ #define SUN5I_GPB_UART0		2
+ #define SUN8I_GPB_UART2		2
+diff --git a/board/sunxi/board.c b/board/sunxi/board.c
+index f32e8f582f..4b37c9b77a 100644
+--- a/board/sunxi/board.c
++++ b/board/sunxi/board.c
+@@ -101,6 +101,10 @@ void i2c_init_board(void)
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(14), SUN6I_GPH_TWI0);
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(15), SUN6I_GPH_TWI0);
+ 	clock_twi_onoff(0, 1);
++#elif defined(CONFIG_MACH_SUN8I_V3S)
++	sunxi_gpio_set_cfgpin(SUNXI_GPB(6), SUN8I_V3S_GPB_TWI0);
++	sunxi_gpio_set_cfgpin(SUNXI_GPB(7), SUN8I_V3S_GPB_TWI0);
++	clock_twi_onoff(0, 1);
+ #elif defined(CONFIG_MACH_SUN8I)
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(2), SUN8I_GPH_TWI0);
+ 	sunxi_gpio_set_cfgpin(SUNXI_GPH(3), SUN8I_GPH_TWI0);
+diff --git a/drivers/power/Kconfig b/drivers/power/Kconfig
+index 5910926fac..02050f6f35 100644
+--- a/drivers/power/Kconfig
++++ b/drivers/power/Kconfig
+@@ -14,7 +14,7 @@ choice
+ 	default AXP209_POWER if MACH_SUN4I || MACH_SUN5I || MACH_SUN7I
+ 	default AXP221_POWER if MACH_SUN6I || MACH_SUN8I_A23 || MACH_SUN8I_A33 || MACH_SUN8I_R40
+ 	default AXP818_POWER if MACH_SUN8I_A83T
+-	default SUNXI_NO_PMIC if MACH_SUNXI_H3_H5 || MACH_SUN50I
++	default SUNXI_NO_PMIC if MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_V3S
+ 
+ config SUNXI_NO_PMIC
+ 	bool "board without a pmic"
+@@ -32,7 +32,7 @@ config AXP152_POWER
+ 
+ config AXP209_POWER
+ 	bool "axp209 pmic support"
+-	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I
++	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUN8I_V3S
+ 	select AXP_PMIC_BUS
+ 	select CMD_POWEROFF
+ 	---help---
+-- 
+2.28.0
+
+
+From f229ec30eb2390d204a2e63e140d52a7de9005ea Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:19:35 +0800
+Subject: [PATCH 5/9] sunxi: dts: sync Allwinner V3s-related DTs from Linux
+ 5.10-rc1
+
+This commit imports device tree files that are related to Allwinner V3
+series from Linux commit 3650b228f83a ("Linux 5.10-rc1").
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
+---
+ arch/arm/dts/sun8i-s3-lichee-zero-plus.dts    |  53 +++
+ arch/arm/dts/sun8i-s3-pinecube.dts            | 235 +++++++++++++
+ arch/arm/dts/sun8i-v3.dtsi                    |  27 ++
+ arch/arm/dts/sun8i-v3s-licheepi-zero-dock.dts |  96 ++++++
+ arch/arm/dts/sun8i-v3s-licheepi-zero.dts      |  26 +-
+ arch/arm/dts/sun8i-v3s.dtsi                   | 318 ++++++++++++++++--
+ 6 files changed, 725 insertions(+), 30 deletions(-)
+ create mode 100644 arch/arm/dts/sun8i-s3-lichee-zero-plus.dts
+ create mode 100644 arch/arm/dts/sun8i-s3-pinecube.dts
+ create mode 100644 arch/arm/dts/sun8i-v3.dtsi
+ create mode 100644 arch/arm/dts/sun8i-v3s-licheepi-zero-dock.dts
+
+diff --git a/arch/arm/dts/sun8i-s3-lichee-zero-plus.dts b/arch/arm/dts/sun8i-s3-lichee-zero-plus.dts
+new file mode 100644
+index 0000000000..d18192d51d
+--- /dev/null
++++ b/arch/arm/dts/sun8i-s3-lichee-zero-plus.dts
+@@ -0,0 +1,53 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (C) 2019 Icenowy Zheng <icenowy@aosc.io>
++ */
++
++/dts-v1/;
++#include "sun8i-v3.dtsi"
++
++#include <dt-bindings/gpio/gpio.h>
++
++/ {
++	model = "Sipeed Lichee Zero Plus";
++	compatible = "sipeed,lichee-zero-plus", "sochip,s3",
++		     "allwinner,sun8i-v3";
++
++	aliases {
++		serial0 = &uart0;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	reg_vcc3v3: vcc3v3 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc3v3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++	};
++};
++
++&mmc0 {
++	broken-cd;
++	bus-width = <4>;
++	vmmc-supply = <&reg_vcc3v3>;
++	status = "okay";
++};
++
++&uart0 {
++	pinctrl-0 = <&uart0_pb_pins>;
++	pinctrl-names = "default";
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "peripheral";
++	status = "okay";
++};
++
++&usbphy {
++	usb0_id_det-gpios = <&pio 5 6 GPIO_ACTIVE_HIGH>;
++	status = "okay";
++};
 diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
 new file mode 100644
-index 0000000000..d686b81894
+index 0000000000..9bab6b7f40
 --- /dev/null
 +++ b/arch/arm/dts/sun8i-s3-pinecube.dts
-@@ -0,0 +1,84 @@
+@@ -0,0 +1,235 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR X11)
 +/*
-+ * Copyright (C) 2020 Daniel Fullmer <danielrf12@gmail.com>
++ * Copyright 2019 Icenowy Zheng <icenowy@aosc.io>
++ */
++
++/dts-v1/;
++#include "sun8i-v3.dtsi"
++#include <dt-bindings/gpio/gpio.h>
++#include <dt-bindings/input/input.h>
++
++/ {
++	model = "PineCube IP Camera";
++	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
++
++	aliases {
++		serial0 = &uart2;
++	};
++
++	chosen {
++		stdout-path = "serial0:115200n8";
++	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		led1 {
++			label = "pine64:ir:led1";
++			gpios = <&pio 1 10 GPIO_ACTIVE_LOW>; /* PB10 */
++		};
++
++		led2 {
++			label = "pine64:ir:led2";
++			gpios = <&pio 1 12 GPIO_ACTIVE_LOW>; /* PB12 */
++		};
++	};
++
++	reg_vcc5v0: vcc5v0 {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc5v0";
++		regulator-min-microvolt = <5000000>;
++		regulator-max-microvolt = <5000000>;
++	};
++
++	reg_vcc_wifi: vcc-wifi {
++		compatible = "regulator-fixed";
++		regulator-name = "vcc-wifi";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pio 1 2 GPIO_ACTIVE_LOW>; /* PB2 WIFI-EN */
++		vin-supply = <&reg_dcdc3>;
++		startup-delay-us = <200000>;
++	};
++
++	wifi_pwrseq: wifi_pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&pio 1 3 GPIO_ACTIVE_LOW>; /* PB3 WIFI-RST */
++		post-power-on-delay-ms = <200>;
++	};
++};
++
++&csi1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&csi1_8bit_pins>;
++	status = "okay";
++
++	port {
++		#address-cells = <1>;
++		#size-cells = <0>;
++
++		csi1_ep: endpoint {
++			remote-endpoint = <&ov5640_ep>;
++			bus-width = <8>;
++			hsync-active = <1>; /* Active high */
++			vsync-active = <0>; /* Active low */
++			data-active = <1>;  /* Active high */
++			pclk-sample = <1>;  /* Rising */
++		};
++	};
++};
++
++&emac {
++	phy-handle = <&int_mii_phy>;
++	phy-mode = "mii";
++	status = "okay";
++};
++
++&i2c0 {
++	status = "okay";
++
++	axp209: pmic@34 {
++		compatible = "x-powers,axp203",
++			     "x-powers,axp209";
++		reg = <0x34>;
++		interrupt-parent = <&gic>;
++		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
++		interrupt-controller;
++		#interrupt-cells = <1>;
++	};
++};
++
++&i2c1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&i2c1_pe_pins>;
++	status = "okay";
++
++	ov5640: camera@3c {
++		compatible = "ovti,ov5640";
++		reg = <0x3c>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&csi1_mclk_pin>;
++		clocks = <&ccu CLK_CSI1_MCLK>;
++		clock-names = "xclk";
++
++		AVDD-supply = <&reg_ldo3>;
++		DOVDD-supply = <&reg_ldo3>;
++		DVDD-supply = <&reg_ldo4>;
++		reset-gpios = <&pio 4 23 GPIO_ACTIVE_LOW>; /* PE23 */
++		powerdown-gpios = <&pio 4 24 GPIO_ACTIVE_HIGH>; /* PE24 */
++
++		port {
++			ov5640_ep: endpoint {
++				remote-endpoint = <&csi1_ep>;
++				bus-width = <8>;
++				hsync-active = <1>; /* Active high */
++				vsync-active = <0>; /* Active low */
++				data-active = <1>;  /* Active high */
++				pclk-sample = <1>;  /* Rising */
++			};
++		};
++	};
++};
++
++&lradc {
++	vref-supply = <&reg_ldo2>;
++	status = "okay";
++
++	button-200 {
++		label = "Setup";
++		linux,code = <KEY_SETUP>;
++		channel = <0>;
++		voltage = <190000>;
++	};
++};
++
++&mmc0 {
++	vmmc-supply = <&reg_dcdc3>;
++	bus-width = <4>;
++	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;
++	status = "okay";
++};
++
++&mmc1 {
++	vmmc-supply = <&reg_vcc_wifi>;
++	vqmmc-supply = <&reg_dcdc3>;
++	mmc-pwrseq = <&wifi_pwrseq>;
++	bus-width = <4>;
++	non-removable;
++	status = "okay";
++};
++
++&pio {
++	vcc-pd-supply = <&reg_dcdc3>;
++	vcc-pe-supply = <&reg_ldo3>;
++};
++
++#include "axp209.dtsi"
++
++&ac_power_supply {
++	status = "okay";
++};
++
++&reg_dcdc2 {
++	regulator-always-on;
++	regulator-min-microvolt = <1250000>;
++	regulator-max-microvolt = <1250000>;
++	regulator-name = "vdd-sys-cpu-ephy";
++};
++
++&reg_dcdc3 {
++	regulator-always-on;
++	regulator-min-microvolt = <3300000>;
++	regulator-max-microvolt = <3300000>;
++	regulator-name = "vcc-3v3";
++};
++
++&reg_ldo1 {
++	regulator-name = "vdd-rtc";
++};
++
++&reg_ldo2 {
++	regulator-always-on;
++	regulator-min-microvolt = <3000000>;
++	regulator-max-microvolt = <3000000>;
++	regulator-name = "avcc";
++};
++
++&reg_ldo3 {
++	regulator-min-microvolt = <2800000>;
++	regulator-max-microvolt = <2800000>;
++	regulator-name = "avdd-dovdd-2v8-csi";
++	regulator-soft-start;
++	regulator-ramp-delay = <1600>;
++};
++
++&reg_ldo4 {
++	regulator-min-microvolt = <1800000>;
++	regulator-max-microvolt = <1800000>;
++	regulator-name = "dvdd-1v8-csi";
++};
++
++&spi0 {
++	status = "okay";
++
++	flash@0 {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		compatible = "winbond,w25q128", "jedec,spi-nor";
++		reg = <0>;
++		spi-max-frequency = <40000000>;
++	};
++};
++
++&uart2 {
++	status = "okay";
++};
++
++&usb_otg {
++	dr_mode = "host";
++	status = "okay";
++};
++
++&usbphy {
++	usb0_vbus-supply = <&reg_vcc5v0>;
++	status = "okay";
++};
+diff --git a/arch/arm/dts/sun8i-v3.dtsi b/arch/arm/dts/sun8i-v3.dtsi
+new file mode 100644
+index 0000000000..ca4672ed2e
+--- /dev/null
++++ b/arch/arm/dts/sun8i-v3.dtsi
+@@ -0,0 +1,27 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright (C) 2019 Icenowy Zheng <icenowy@aosc.io>
++ */
++
++#include "sun8i-v3s.dtsi"
++
++&ccu {
++	compatible = "allwinner,sun8i-v3-ccu";
++};
++
++&emac {
++	/delete-property/ phy-handle;
++	/delete-property/ phy-mode;
++};
++
++&mdio_mux {
++	external_mdio: mdio@2 {
++		reg = <2>;
++		#address-cells = <1>;
++		#size-cells = <0>;
++	};
++};
++
++&pio {
++	compatible = "allwinner,sun8i-v3-pinctrl";
++};
+diff --git a/arch/arm/dts/sun8i-v3s-licheepi-zero-dock.dts b/arch/arm/dts/sun8i-v3s-licheepi-zero-dock.dts
+new file mode 100644
+index 0000000000..db5cd0b857
+--- /dev/null
++++ b/arch/arm/dts/sun8i-v3s-licheepi-zero-dock.dts
+@@ -0,0 +1,96 @@
++/*
 + * Copyright (C) 2016 Icenowy Zheng <icenowy@aosc.xyz>
 + *
 + * This file is dual-licensed: you can use it either under the terms
@@ -75,92 +580,670 @@ index 0000000000..d686b81894
 + *     OTHER DEALINGS IN THE SOFTWARE.
 + */
 +
-+/dts-v1/;
-+#include "sun8i-v3s.dtsi"
-+#include "sunxi-common-regulators.dtsi"
++#include "sun8i-v3s-licheepi-zero.dts"
++
++#include <dt-bindings/input/input.h>
 +
 +/ {
-+	model = "Pine64 Pinecube";
-+	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
++	model = "Lichee Pi Zero with Dock";
++	compatible = "licheepi,licheepi-zero-dock", "licheepi,licheepi-zero",
++		     "allwinner,sun8i-v3s";
 +
-+	aliases {
-+		serial0 = &uart0;
-+	};
-+
-+	chosen {
-+		stdout-path = "serial0:115200n8";
++	leds {
++		/* The LEDs use PG0~2 pins, which conflict with MMC1 */
++		status = "disabled";
 +	};
 +};
 +
-+&mmc0 {
-+	pinctrl-0 = <&mmc0_pins_a>;
-+	pinctrl-names = "default";
++&mmc1 {
 +	broken-cd;
 +	bus-width = <4>;
 +	vmmc-supply = <&reg_vcc3v3>;
 +	status = "okay";
 +};
 +
-+&uart0 {
-+	pinctrl-0 = <&uart0_pins_a>;
-+	pinctrl-names = "default";
++&lradc {
++	vref-supply = <&reg_vcc3v0>;
 +	status = "okay";
-+};
 +
-+&usb_otg {
-+	dr_mode = "otg";
-+	status = "okay";
-+};
++	button-200 {
++		label = "Volume Up";
++		linux,code = <KEY_VOLUMEUP>;
++		channel = <0>;
++		voltage = <200000>;
++	};
 +
-+&usbphy {
-+	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
-+	status = "okay";
++	button-400 {
++		label = "Volume Down";
++		linux,code = <KEY_VOLUMEDOWN>;
++		channel = <0>;
++		voltage = <400000>;
++	};
++
++	button-600 {
++		label = "Select";
++		linux,code = <KEY_SELECT>;
++		channel = <0>;
++		voltage = <600000>;
++	};
++
++	button-800 {
++		label = "Start";
++		linux,code = <KEY_OK>;
++		channel = <0>;
++		voltage = <800000>;
++	};
 +};
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index be0822bfb7..2257ef6eb1 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -357,13 +357,11 @@ config SUNXI_DRAM_LPDDR3
+diff --git a/arch/arm/dts/sun8i-v3s-licheepi-zero.dts b/arch/arm/dts/sun8i-v3s-licheepi-zero.dts
+index 3d9168cbae..2e4587d26c 100644
+--- a/arch/arm/dts/sun8i-v3s-licheepi-zero.dts
++++ b/arch/arm/dts/sun8i-v3s-licheepi-zero.dts
+@@ -55,11 +55,29 @@
+ 	chosen {
+ 		stdout-path = "serial0:115200n8";
+ 	};
++
++	leds {
++		compatible = "gpio-leds";
++
++		blue_led {
++			label = "licheepi:blue:usr";
++			gpios = <&pio 6 1 GPIO_ACTIVE_LOW>; /* PG1 */
++		};
++
++		green_led {
++			label = "licheepi:green:usr";
++			gpios = <&pio 6 0 GPIO_ACTIVE_LOW>; /* PG0 */
++			default-state = "on";
++		};
++
++		red_led {
++			label = "licheepi:red:usr";
++			gpios = <&pio 6 2 GPIO_ACTIVE_LOW>; /* PG2 */
++		};
++	};
+ };
  
- choice
- 	prompt "DRAM Type and Timing"
--	default SUNXI_DRAM_DDR3_1333 if !MACH_SUN8I_V3S
--	default SUNXI_DRAM_DDR2_V3S if MACH_SUN8I_V3S
-+	default SUNXI_DRAM_DDR3_1333
+ &mmc0 {
+-	pinctrl-0 = <&mmc0_pins_a>;
+-	pinctrl-names = "default";
+ 	broken-cd;
+ 	bus-width = <4>;
+ 	vmmc-supply = <&reg_vcc3v3>;
+@@ -67,7 +85,7 @@
+ };
  
- config SUNXI_DRAM_DDR3_1333
- 	bool "DDR3 1333"
- 	select SUNXI_DRAM_DDR3
--	depends on !MACH_SUN8I_V3S
- 	---help---
- 	This option is the original only supported memory type, which suits
- 	many H3/H5/A64 boards available now.
-diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
-new file mode 100644
-index 0000000000..361c187f12
---- /dev/null
-+++ b/configs/pinecube_defconfig
-@@ -0,0 +1,12 @@
-+CONFIG_ARM=y
-+CONFIG_ARCH_SUNXI=y
-+CONFIG_SPL=y
-+CONFIG_MACH_SUN8I_V3S=y
-+CONFIG_DRAM_CLK=360
-+CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
-+# CONFIG_NETDEVICES is not set
+ &uart0 {
+-	pinctrl-0 = <&uart0_pins_a>;
++	pinctrl-0 = <&uart0_pb_pins>;
+ 	pinctrl-names = "default";
+ 	status = "okay";
+ };
+@@ -78,6 +96,6 @@
+ };
+ 
+ &usbphy {
+-	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
++	usb0_id_det-gpios = <&pio 5 6 GPIO_ACTIVE_HIGH>;
+ 	status = "okay";
+ };
+diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
+index ebefc0fefe..0c73416769 100644
+--- a/arch/arm/dts/sun8i-v3s.dtsi
++++ b/arch/arm/dts/sun8i-v3s.dtsi
+@@ -40,16 +40,31 @@
+  *     OTHER DEALINGS IN THE SOFTWARE.
+  */
+ 
++#include <dt-bindings/interrupt-controller/arm-gic.h>
+ #include <dt-bindings/clock/sun8i-v3s-ccu.h>
+ #include <dt-bindings/reset/sun8i-v3s-ccu.h>
+-#include <dt-bindings/interrupt-controller/arm-gic.h>
+-#include <dt-bindings/pinctrl/sun4i-a10.h>
++#include <dt-bindings/clock/sun8i-de2.h>
+ 
+ / {
+ 	#address-cells = <1>;
+ 	#size-cells = <1>;
+ 	interrupt-parent = <&gic>;
+ 
++	chosen {
++		#address-cells = <1>;
++		#size-cells = <1>;
++		ranges;
 +
-+# S3 uses DDR3
-+CONFIG_SUNXI_DRAM_DDR3_133=y
-+CONFIG_SUNXI_DRAM_DDR2=n
-+CONFIG_SUNXI_DRAM_DDR2_V3S=n
++		framebuffer-lcd {
++			compatible = "allwinner,simple-framebuffer",
++				     "simple-framebuffer";
++			allwinner,pipeline = "mixer0-lcd0";
++			clocks = <&display_clocks CLK_MIXER0>,
++				 <&ccu CLK_TCON0>;
++			status = "disabled";
++		};
++	};
++
+ 	cpus {
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+@@ -62,6 +77,12 @@
+ 		};
+ 	};
+ 
++	de: display-engine {
++		compatible = "allwinner,sun8i-v3s-display-engine";
++		allwinner,pipelines = <&mixer0>;
++		status = "disabled";
++	};
++
+ 	timer {
+ 		compatible = "arm,armv7-timer";
+ 		interrupts = <GIC_PPI 13 (GIC_CPU_MASK_SIMPLE(4) | IRQ_TYPE_LEVEL_LOW)>,
+@@ -79,6 +100,7 @@
+ 			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+ 			clock-frequency = <24000000>;
++			clock-accuracy = <50000>;
+ 			clock-output-names = "osc24M";
+ 		};
+ 
+@@ -86,7 +108,8 @@
+ 			#clock-cells = <0>;
+ 			compatible = "fixed-clock";
+ 			clock-frequency = <32768>;
+-			clock-output-names = "osc32k";
++			clock-accuracy = <50000>;
++			clock-output-names = "ext-osc32k";
+ 		};
+ 	};
+ 
+@@ -96,7 +119,86 @@
+ 		#size-cells = <1>;
+ 		ranges;
+ 
+-		mmc0: mmc@01c0f000 {
++		display_clocks: clock@1000000 {
++			compatible = "allwinner,sun8i-v3s-de2-clk";
++			reg = <0x01000000 0x10000>;
++			clocks = <&ccu CLK_BUS_DE>,
++				 <&ccu CLK_DE>;
++			clock-names = "bus",
++				      "mod";
++			resets = <&ccu RST_BUS_DE>;
++			#clock-cells = <1>;
++			#reset-cells = <1>;
++		};
++
++		mixer0: mixer@1100000 {
++			compatible = "allwinner,sun8i-v3s-de2-mixer";
++			reg = <0x01100000 0x100000>;
++			clocks = <&display_clocks 0>,
++				 <&display_clocks 6>;
++			clock-names = "bus",
++				      "mod";
++			resets = <&display_clocks 0>;
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				mixer0_out: port@1 {
++					reg = <1>;
++
++					mixer0_out_tcon0: endpoint {
++						remote-endpoint = <&tcon0_in_mixer0>;
++					};
++				};
++			};
++		};
++
++		syscon: system-control@1c00000 {
++			compatible = "allwinner,sun8i-v3s-system-control",
++				     "allwinner,sun8i-h3-system-control";
++			reg = <0x01c00000 0x1000>;
++			#address-cells = <1>;
++			#size-cells = <1>;
++			ranges;
++		};
++
++		tcon0: lcd-controller@1c0c000 {
++			compatible = "allwinner,sun8i-v3s-tcon";
++			reg = <0x01c0c000 0x1000>;
++			interrupts = <GIC_SPI 86 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_TCON0>,
++				 <&ccu CLK_TCON0>;
++			clock-names = "ahb",
++				      "tcon-ch0";
++			clock-output-names = "tcon-pixel-clock";
++			#clock-cells = <0>;
++			resets = <&ccu RST_BUS_TCON0>;
++			reset-names = "lcd";
++			status = "disabled";
++
++			ports {
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				tcon0_in: port@0 {
++					reg = <0>;
++
++					tcon0_in_mixer0: endpoint {
++						remote-endpoint = <&mixer0_out_tcon0>;
++					};
++				};
++
++				tcon0_out: port@1 {
++					#address-cells = <1>;
++					#size-cells = <0>;
++					reg = <1>;
++				};
++			};
++		};
++
++
++		mmc0: mmc@1c0f000 {
+ 			compatible = "allwinner,sun7i-a20-mmc";
+ 			reg = <0x01c0f000 0x1000>;
+ 			clocks = <&ccu CLK_BUS_MMC0>,
+@@ -110,12 +212,14 @@
+ 			resets = <&ccu RST_BUS_MMC0>;
+ 			reset-names = "ahb";
+ 			interrupts = <GIC_SPI 60 IRQ_TYPE_LEVEL_HIGH>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&mmc0_pins>;
+ 			status = "disabled";
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 		};
+ 
+-		mmc1: mmc@01c10000 {
++		mmc1: mmc@1c10000 {
+ 			compatible = "allwinner,sun7i-a20-mmc";
+ 			reg = <0x01c10000 0x1000>;
+ 			clocks = <&ccu CLK_BUS_MMC1>,
+@@ -129,12 +233,14 @@
+ 			resets = <&ccu RST_BUS_MMC1>;
+ 			reset-names = "ahb";
+ 			interrupts = <GIC_SPI 61 IRQ_TYPE_LEVEL_HIGH>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&mmc1_pins>;
+ 			status = "disabled";
+ 			#address-cells = <1>;
+ 			#size-cells = <0>;
+ 		};
+ 
+-		mmc2: mmc@01c11000 {
++		mmc2: mmc@1c11000 {
+ 			compatible = "allwinner,sun7i-a20-mmc";
+ 			reg = <0x01c11000 0x1000>;
+ 			clocks = <&ccu CLK_BUS_MMC2>,
+@@ -153,7 +259,18 @@
+ 			#size-cells = <0>;
+ 		};
+ 
+-		usb_otg: usb@01c19000 {
++		crypto@1c15000 {
++			compatible = "allwinner,sun8i-v3s-crypto",
++				     "allwinner,sun8i-a33-crypto";
++			reg = <0x01c15000 0x1000>;
++			interrupts = <GIC_SPI 80 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_CE>, <&ccu CLK_CE>;
++			clock-names = "ahb", "mod";
++			resets = <&ccu RST_BUS_CE>;
++			reset-names = "ahb";
++		};
++
++		usb_otg: usb@1c19000 {
+ 			compatible = "allwinner,sun8i-h3-musb";
+ 			reg = <0x01c19000 0x0400>;
+ 			clocks = <&ccu CLK_BUS_OTG>;
+@@ -166,7 +283,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		usbphy: phy@01c19400 {
++		usbphy: phy@1c19400 {
+ 			compatible = "allwinner,sun8i-v3s-usb-phy";
+ 			reg = <0x01c19400 0x2c>,
+ 			      <0x01c1a800 0x4>;
+@@ -180,64 +297,118 @@
+ 			#phy-cells = <1>;
+ 		};
+ 
+-		ccu: clock@01c20000 {
++		ccu: clock@1c20000 {
+ 			compatible = "allwinner,sun8i-v3s-ccu";
+ 			reg = <0x01c20000 0x400>;
+-			clocks = <&osc24M>, <&osc32k>;
++			clocks = <&osc24M>, <&rtc 0>;
+ 			clock-names = "hosc", "losc";
+ 			#clock-cells = <1>;
+ 			#reset-cells = <1>;
+ 		};
+ 
+-		rtc: rtc@01c20400 {
+-			compatible = "allwinner,sun6i-a31-rtc";
++		rtc: rtc@1c20400 {
++			#clock-cells = <1>;
++			compatible = "allwinner,sun8i-v3-rtc";
+ 			reg = <0x01c20400 0x54>;
+ 			interrupts = <GIC_SPI 40 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 41 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&osc32k>;
++			clock-output-names = "osc32k", "osc32k-out";
+ 		};
+ 
+-		pio: pinctrl@01c20800 {
++		pio: pinctrl@1c20800 {
+ 			compatible = "allwinner,sun8i-v3s-pinctrl";
+ 			reg = <0x01c20800 0x400>;
+ 			interrupts = <GIC_SPI 15 IRQ_TYPE_LEVEL_HIGH>,
+ 				     <GIC_SPI 17 IRQ_TYPE_LEVEL_HIGH>;
+-			clocks = <&ccu CLK_BUS_PIO>, <&osc24M>, <&osc32k>;
++			clocks = <&ccu CLK_BUS_PIO>, <&osc24M>, <&rtc 0>;
+ 			clock-names = "apb", "hosc", "losc";
+ 			gpio-controller;
+ 			#gpio-cells = <3>;
+ 			interrupt-controller;
+ 			#interrupt-cells = <3>;
+ 
+-			uart0_pins_a: uart0@0 {
++			/omit-if-no-ref/
++			csi1_8bit_pins: csi1-8bit-pins {
++				pins = "PE0", "PE2", "PE3", "PE8", "PE9",
++				       "PE10", "PE11", "PE12", "PE13", "PE14",
++				       "PE15";
++				function = "csi";
++			};
++
++			/omit-if-no-ref/
++			csi1_mclk_pin: csi1-mclk-pin {
++				pins = "PE1";
++				function = "csi";
++			};
++
++			i2c0_pins: i2c0-pins {
++				pins = "PB6", "PB7";
++				function = "i2c0";
++			};
++
++			/omit-if-no-ref/
++			i2c1_pe_pins: i2c1-pe-pins {
++				pins = "PE21", "PE22";
++				function = "i2c1";
++			};
++
++			uart0_pb_pins: uart0-pb-pins {
+ 				pins = "PB8", "PB9";
+ 				function = "uart0";
+-				bias-pull-up;
+ 			};
+ 
+-			mmc0_pins_a: mmc0@0 {
++			uart2_pins: uart2-pins {
++				pins = "PB0", "PB1";
++				function = "uart2";
++			};
++
++			mmc0_pins: mmc0-pins {
+ 				pins = "PF0", "PF1", "PF2", "PF3",
+ 				       "PF4", "PF5";
+ 				function = "mmc0";
+ 				drive-strength = <30>;
+ 				bias-pull-up;
+ 			};
++
++			mmc1_pins: mmc1-pins {
++				pins = "PG0", "PG1", "PG2", "PG3",
++				       "PG4", "PG5";
++				function = "mmc1";
++				drive-strength = <30>;
++				bias-pull-up;
++			};
++
++			spi0_pins: spi0-pins {
++				pins = "PC0", "PC1", "PC2", "PC3";
++				function = "spi0";
++			};
+ 		};
+ 
+-		timer@01c20c00 {
+-			compatible = "allwinner,sun4i-a10-timer";
++		timer@1c20c00 {
++			compatible = "allwinner,sun8i-v3s-timer";
+ 			reg = <0x01c20c00 0xa0>;
+ 			interrupts = <GIC_SPI 18 IRQ_TYPE_LEVEL_HIGH>,
+-				     <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>;
++				     <GIC_SPI 19 IRQ_TYPE_LEVEL_HIGH>,
++				     <GIC_SPI 20 IRQ_TYPE_LEVEL_HIGH>;
+ 			clocks = <&osc24M>;
+ 		};
+ 
+-		wdt0: watchdog@01c20ca0 {
++		wdt0: watchdog@1c20ca0 {
+ 			compatible = "allwinner,sun6i-a31-wdt";
+ 			reg = <0x01c20ca0 0x20>;
+ 			interrupts = <GIC_SPI 25 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&osc24M>;
++		};
++
++		lradc: lradc@1c22800 {
++			compatible = "allwinner,sun4i-a10-lradc-keys";
++			reg = <0x01c22800 0x400>;
++			interrupts = <GIC_SPI 30 IRQ_TYPE_LEVEL_HIGH>;
++			status = "disabled";
+ 		};
+ 
+-		uart0: serial@01c28000 {
++		uart0: serial@1c28000 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28000 0x400>;
+ 			interrupts = <GIC_SPI 0 IRQ_TYPE_LEVEL_HIGH>;
+@@ -248,7 +419,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		uart1: serial@01c28400 {
++		uart1: serial@1c28400 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28400 0x400>;
+ 			interrupts = <GIC_SPI 1 IRQ_TYPE_LEVEL_HIGH>;
+@@ -259,7 +430,7 @@
+ 			status = "disabled";
+ 		};
+ 
+-		uart2: serial@01c28800 {
++		uart2: serial@1c28800 {
+ 			compatible = "snps,dw-apb-uart";
+ 			reg = <0x01c28800 0x400>;
+ 			interrupts = <GIC_SPI 2 IRQ_TYPE_LEVEL_HIGH>;
+@@ -267,11 +438,106 @@
+ 			reg-io-width = <4>;
+ 			clocks = <&ccu CLK_BUS_UART2>;
+ 			resets = <&ccu RST_BUS_UART2>;
++			pinctrl-0 = <&uart2_pins>;
++			pinctrl-names = "default";
++			status = "disabled";
++		};
++
++		i2c0: i2c@1c2ac00 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2ac00 0x400>;
++			interrupts = <GIC_SPI 6 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_I2C0>;
++			resets = <&ccu RST_BUS_I2C0>;
++			pinctrl-names = "default";
++			pinctrl-0 = <&i2c0_pins>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		i2c1: i2c@1c2b000 {
++			compatible = "allwinner,sun6i-a31-i2c";
++			reg = <0x01c2b000 0x400>;
++			interrupts = <GIC_SPI 7 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_I2C1>;
++			resets = <&ccu RST_BUS_I2C1>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		emac: ethernet@1c30000 {
++			compatible = "allwinner,sun8i-v3s-emac";
++			syscon = <&syscon>;
++			reg = <0x01c30000 0x10000>;
++			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
++			interrupt-names = "macirq";
++			resets = <&ccu RST_BUS_EMAC>;
++			reset-names = "stmmaceth";
++			clocks = <&ccu CLK_BUS_EMAC>;
++			clock-names = "stmmaceth";
++			phy-handle = <&int_mii_phy>;
++			phy-mode = "mii";
++			status = "disabled";
++
++			mdio: mdio {
++				#address-cells = <1>;
++				#size-cells = <0>;
++				compatible = "snps,dwmac-mdio";
++			};
++
++			mdio_mux: mdio-mux {
++				compatible = "allwinner,sun8i-h3-mdio-mux";
++				#address-cells = <1>;
++				#size-cells = <0>;
++
++				mdio-parent-bus = <&mdio>;
++				/* Only one MDIO is usable at the time */
++				internal_mdio: mdio@1 {
++					compatible = "allwinner,sun8i-h3-mdio-internal";
++					reg = <1>;
++					#address-cells = <1>;
++					#size-cells = <0>;
++
++					int_mii_phy: ethernet-phy@1 {
++						compatible = "ethernet-phy-ieee802.3-c22";
++						reg = <1>;
++						clocks = <&ccu CLK_BUS_EPHY>;
++						resets = <&ccu RST_BUS_EPHY>;
++					};
++				};
++			};
++		};
++
++		spi0: spi@1c68000 {
++			compatible = "allwinner,sun8i-h3-spi";
++			reg = <0x01c68000 0x1000>;
++			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_SPI0>, <&ccu CLK_SPI0>;
++			clock-names = "ahb", "mod";
++			pinctrl-names = "default";
++			pinctrl-0 = <&spi0_pins>;
++			resets = <&ccu RST_BUS_SPI0>;
++			status = "disabled";
++			#address-cells = <1>;
++			#size-cells = <0>;
++		};
++
++		csi1: camera@1cb4000 {
++			compatible = "allwinner,sun8i-v3s-csi";
++			reg = <0x01cb4000 0x3000>;
++			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
++			clocks = <&ccu CLK_BUS_CSI>,
++				 <&ccu CLK_CSI1_SCLK>,
++				 <&ccu CLK_DRAM_CSI>;
++			clock-names = "bus", "mod", "ram";
++			resets = <&ccu RST_BUS_CSI>;
+ 			status = "disabled";
+ 		};
+ 
+-		gic: interrupt-controller@01c81000 {
+-			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
++		gic: interrupt-controller@1c81000 {
++			compatible = "arm,gic-400";
+ 			reg = <0x01c81000 0x1000>,
+ 			      <0x01c82000 0x1000>,
+ 			      <0x01c84000 0x2000>,
 -- 
 2.28.0
 
 
-From 415ea55f47610b4181339e82ef310071b2c61340 Mon Sep 17 00:00:00 2001
+From b3972695f62ccbde205b304e159b3423662cc048 Mon Sep 17 00:00:00 2001
+From: Icenowy Zheng <icenowy@aosc.io>
+Date: Mon, 26 Oct 2020 22:21:00 +0800
+Subject: [PATCH 6/9] sunxi: add PineCube board
+
+PineCube is an IP camera development kit released by Pine64.
+
+It comes with the following compoents:
+
+- A mainboard with Sochip S3 SoC, a 16MByte SPI Flash, AXP209 PMIC,
+a power-only microUSB connector, a USB Type-A connector, a 10/100Mbps
+Ethernet port and FPC connectors for camera and daughter board.
+- An OV5640-based camera module which is connected to the parallel CSI
+bus of the mainboard.
+- A daughterboard with several buttons, a SD slot, some IR LEDs, a
+microphone and a speaker connector.
+
+As the device tree is synchronized in a previous commit, just add
+MAINTAINER item and a defconfig.
+
+Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
+Acked-by: Maxime Ripard <mripard@kernel.org>
+---
+ board/sunxi/MAINTAINERS    |  5 +++++
+ configs/pinecube_defconfig | 17 +++++++++++++++++
+ 2 files changed, 22 insertions(+)
+ create mode 100644 configs/pinecube_defconfig
+
+diff --git a/board/sunxi/MAINTAINERS b/board/sunxi/MAINTAINERS
+index 1180b86db3..5c53b2c878 100644
+--- a/board/sunxi/MAINTAINERS
++++ b/board/sunxi/MAINTAINERS
+@@ -440,6 +440,11 @@ M:	Vasily Khoruzhick <anarsoul@gmail.com>
+ S:	Maintained
+ F:	configs/pinebook_defconfig
+ 
++PINECUBE BOARD:
++M:	Icenowy Zheng <icenowy@aosc.io>
++S:	Maintained
++F:	configs/pinecube_defconfig
++
+ PINE64 BOARDS
+ M:	Andre Przywara <andre.przywara@arm.com>
+ S:	Maintained
+diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
+new file mode 100644
+index 0000000000..107562ee49
+--- /dev/null
++++ b/configs/pinecube_defconfig
+@@ -0,0 +1,17 @@
++CONFIG_ARM=y
++CONFIG_ARCH_SUNXI=y
++CONFIG_SPL=y
++CONFIG_MACH_SUN8I_V3S=y
++CONFIG_SUNXI_DRAM_DDR3_1333=y
++CONFIG_DRAM_CLK=504
++CONFIG_DRAM_ODT_EN=y
++CONFIG_I2C0_ENABLE=y
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
++CONFIG_SPL_I2C_SUPPORT=y
++# CONFIG_NETDEVICES is not set
++CONFIG_AXP209_POWER=y
++CONFIG_AXP_DCDC2_VOLT=1250
++CONFIG_AXP_DCDC3_VOLT=3300
++CONFIG_AXP_ALDO3_VOLT_SLOPE_08=y
++CONFIG_AXP_ALDO3_INRUSH_QUIRK=y
++CONFIG_CONS_INDEX=3
+-- 
+2.28.0
+
+
+From 1d653d30f47f2730bb8039d328271389a120e87d Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Mon, 19 Oct 2020 22:50:57 -0700
-Subject: [PATCH 2/7] sun8i-emac: sun8i-v3s compatibility for sun8i-emac
+Subject: [PATCH 7/9] sun8i-emac: sun8i-v3s compatibility for sun8i-emac
 
 This patch expands the sun8i-emac driver to support the V3s.
 For this the CLK and RST gates for EMAC and EPHY were added in clk_v3s.c
@@ -172,7 +1255,7 @@ Based on original patch by Benedikt-Alexander Mokru?
  2 files changed, 17 insertions(+), 4 deletions(-)
 
 diff --git a/drivers/clk/sunxi/clk_v3s.c b/drivers/clk/sunxi/clk_v3s.c
-index b79446cc4f..5215d73e5e 100644
+index f3fc06ab31..91ae457e19 100644
 --- a/drivers/clk/sunxi/clk_v3s.c
 +++ b/drivers/clk/sunxi/clk_v3s.c
 @@ -17,6 +17,7 @@ static struct ccu_clk_gate v3s_gates[] = {
@@ -286,131 +1369,10 @@ index e2b05ace8f..29d68d5c2d 100644
 2.28.0
 
 
-From 876e12488bfd1ee18ad0f17d1cee09ba24bfab6a Mon Sep 17 00:00:00 2001
-From: Daniel Fullmer <danielrf12@gmail.com>
-Date: Tue, 20 Oct 2020 18:09:34 -0700
-Subject: [PATCH 3/7] pinecube: Add ethernet support
-
----
- arch/arm/dts/sun8i-s3-pinecube.dts |  5 +++
- arch/arm/dts/sun8i-v3s.dtsi        | 53 ++++++++++++++++++++++++++++++
- configs/pinecube_defconfig         |  7 +---
- 3 files changed, 59 insertions(+), 6 deletions(-)
-
-diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
-index d686b81894..16f9eea45b 100644
---- a/arch/arm/dts/sun8i-s3-pinecube.dts
-+++ b/arch/arm/dts/sun8i-s3-pinecube.dts
-@@ -50,6 +50,7 @@
- 	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
- 
- 	aliases {
-+		ethernet0 = &emac;
- 		serial0 = &uart0;
- 	};
- 
-@@ -82,3 +83,7 @@
- 	usb0_id_det-gpio = <&pio 5 6 GPIO_ACTIVE_HIGH>;
- 	status = "okay";
- };
-+
-+&emac {
-+	status = "okay";
-+};
-diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
-index ebefc0fefe..2a18ff0706 100644
---- a/arch/arm/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/dts/sun8i-v3s.dtsi
-@@ -96,6 +96,16 @@
- 		#size-cells = <1>;
- 		ranges;
- 
-+		syscon: system-control@1c00000 {
-+			compatible = "allwinner,sun8i-v3s-system-control",
-+				     "allwinner,sun8i-h3-system-control";
-+			reg = <0x01c00000 0x1000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+		};
-+
-+
- 		mmc0: mmc@01c0f000 {
- 			compatible = "allwinner,sun7i-a20-mmc";
- 			reg = <0x01c0f000 0x1000>;
-@@ -270,6 +280,49 @@
- 			status = "disabled";
- 		};
- 
-+		emac: ethernet@1c30000 {
-+			compatible = "allwinner,sun8i-v3s-emac";
-+			syscon = <&syscon>;
-+			reg = <0x01c30000 0x10000>;
-+			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupt-names = "macirq";
-+			resets = <&ccu RST_BUS_EMAC>;
-+			reset-names = "stmmaceth";
-+			clocks = <&ccu CLK_BUS_EMAC>;
-+			clock-names = "stmmaceth";
-+			phy-handle = <&int_mii_phy>;
-+			phy-mode = "mii";
-+			status = "disabled";
-+
-+			mdio: mdio {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "snps,dwmac-mdio";
-+			};
-+
-+			mdio_mux: mdio-mux {
-+				compatible = "allwinner,sun8i-h3-mdio-mux";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				mdio-parent-bus = <&mdio>;
-+				/* Only one MDIO is usable at the time */
-+				internal_mdio: mdio@1 {
-+					compatible = "allwinner,sun8i-h3-mdio-internal";
-+					reg = <1>;
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+
-+					int_mii_phy: ethernet-phy@1 {
-+						compatible = "ethernet-phy-ieee802.3-c22";
-+						reg = <1>;
-+						clocks = <&ccu CLK_BUS_EPHY>;
-+						resets = <&ccu RST_BUS_EPHY>;
-+					};
-+				};
-+			};
-+		};
-+
- 		gic: interrupt-controller@01c81000 {
- 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
- 			reg = <0x01c81000 0x1000>,
-diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
-index 361c187f12..ae71219296 100644
---- a/configs/pinecube_defconfig
-+++ b/configs/pinecube_defconfig
-@@ -4,9 +4,4 @@ CONFIG_SPL=y
- CONFIG_MACH_SUN8I_V3S=y
- CONFIG_DRAM_CLK=360
- CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
--# CONFIG_NETDEVICES is not set
--
--# S3 uses DDR3
--CONFIG_SUNXI_DRAM_DDR3_133=y
--CONFIG_SUNXI_DRAM_DDR2=n
--CONFIG_SUNXI_DRAM_DDR2_V3S=n
-+CONFIG_SUN8I_EMAC=y
--- 
-2.28.0
-
-
-From 3bf313c5dea08e53becf8830cfb90482fe2bc2ba Mon Sep 17 00:00:00 2001
+From ad232d117506ba382ee766f406ea35b7809bdcac Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Sat, 24 Oct 2020 17:21:51 -0700
-Subject: [PATCH 4/7] mtd: spi-nor-ids: add XTX xt25f32b/xt25f128b flash
+Subject: [PATCH 8/9] mtd: spi-nor-ids: add XTX xt25f32b/xt25f128b flash
 
 ---
  drivers/mtd/spi/Kconfig       | 6 ++++++
@@ -418,7 +1380,7 @@ Subject: [PATCH 4/7] mtd: spi-nor-ids: add XTX xt25f32b/xt25f128b flash
  2 files changed, 11 insertions(+)
 
 diff --git a/drivers/mtd/spi/Kconfig b/drivers/mtd/spi/Kconfig
-index 018e8c597e..a57f5aa2e7 100644
+index 018e8c597e..723485ba79 100644
 --- a/drivers/mtd/spi/Kconfig
 +++ b/drivers/mtd/spi/Kconfig
 @@ -152,6 +152,12 @@ config SPI_FLASH_XMC
@@ -428,8 +1390,8 @@ index 018e8c597e..a57f5aa2e7 100644
 +config SPI_FLASH_XTX
 +	bool "XTX SPI flash support"
 +	help
-+	  Add support for various XTX (Wuhan Xinxin Semiconductor
-+	  Manufacturing Corp.) SPI flash chips (XTX25FxxxB)
++	  Add support for various XTX (Shenzhen Xin Tian Xia Tech) SPI flash
++	  chips (XTX25FxxxB)
 +
  endif
  
@@ -454,152 +1416,79 @@ index 114ebacde1..e470ba24bd 100644
 2.28.0
 
 
-From 2c76dbcf461e431d098c68959f7a3161345f1a67 Mon Sep 17 00:00:00 2001
+From 443970856fdd30b51a6c59528127262568ac5c7f Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
-Date: Sat, 24 Oct 2020 19:13:12 -0700
-Subject: [PATCH 5/7] sun8i-v3s: enable SPL_SPI_SUNXI
+Date: Tue, 27 Oct 2020 18:44:03 -0700
+Subject: [PATCH 9/9] pinecube: enable ethernet, SPI booting/flashing
 
 ---
- arch/arm/mach-sunxi/Kconfig | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ arch/arm/dts/Makefile              |  3 ++-
+ arch/arm/dts/sun8i-s3-pinecube.dts |  4 +++-
+ configs/pinecube_defconfig         | 10 ++++++++--
+ 3 files changed, 13 insertions(+), 4 deletions(-)
 
-diff --git a/arch/arm/mach-sunxi/Kconfig b/arch/arm/mach-sunxi/Kconfig
-index 2257ef6eb1..cce88182e1 100644
---- a/arch/arm/mach-sunxi/Kconfig
-+++ b/arch/arm/mach-sunxi/Kconfig
-@@ -992,7 +992,7 @@ config SPL_STACK_R_ADDR
- 
- config SPL_SPI_SUNXI
- 	bool "Support for SPI Flash on Allwinner SoCs in SPL"
--	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_R40 || MACH_SUN50I_H6
-+	depends on MACH_SUN4I || MACH_SUN5I || MACH_SUN7I || MACH_SUNXI_H3_H5 || MACH_SUN50I || MACH_SUN8I_R40 || MACH_SUN8I_V3S || MACH_SUN50I_H6
- 	help
- 	  Enable support for SPI Flash. This option allows SPL to read from
- 	  sunxi SPI Flash. It uses the same method as the boot ROM, so does
--- 
-2.28.0
-
-
-From dca7bd484c116df875812ad7441394f96a34cac0 Mon Sep 17 00:00:00 2001
-From: Daniel Fullmer <danielrf12@gmail.com>
-Date: Sat, 24 Oct 2020 17:59:20 -0700
-Subject: [PATCH 6/7] pinecube: add SPI boot support
-
----
- arch/arm/dts/sun8i-s3-pinecube.dts | 14 ++++++++++++++
- arch/arm/dts/sun8i-v3s.dtsi        | 20 ++++++++++++++++++++
- configs/pinecube_defconfig         |  7 +++++++
- 3 files changed, 41 insertions(+)
-
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 9900b44274..74cee045e6 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -563,7 +563,8 @@ dtb-$(CONFIG_MACH_SUN8I_R40) += \
+ 	sun8i-r40-bananapi-m2-ultra.dtb \
+ 	sun8i-v40-bananapi-m2-berry.dtb
+ dtb-$(CONFIG_MACH_SUN8I_V3S) += \
+-	sun8i-v3s-licheepi-zero.dtb
++	sun8i-v3s-licheepi-zero.dtb \
++	sun8i-s3-pinecube.dtb
+ dtb-$(CONFIG_MACH_SUN50I_H5) += \
+ 	sun50i-h5-bananapi-m2-plus.dtb \
+ 	sun50i-h5-emlid-neutis-n5-devboard.dtb \
 diff --git a/arch/arm/dts/sun8i-s3-pinecube.dts b/arch/arm/dts/sun8i-s3-pinecube.dts
-index 16f9eea45b..618d64a5a9 100644
+index 9bab6b7f40..f83f16a83d 100644
 --- a/arch/arm/dts/sun8i-s3-pinecube.dts
 +++ b/arch/arm/dts/sun8i-s3-pinecube.dts
-@@ -52,6 +52,7 @@
+@@ -13,7 +13,9 @@
+ 	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
+ 
  	aliases {
- 		ethernet0 = &emac;
- 		serial0 = &uart0;
++		ethernet0 = &emac;
+ 		serial0 = &uart2;
 +		spi0 = &spi0;
  	};
  
  	chosen {
-@@ -87,3 +88,16 @@
- &emac {
- 	status = "okay";
- };
-+
-+&spi0 {
-+	status = "okay";
-+
-+	flash@0 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
+@@ -214,7 +216,7 @@
+ 	flash@0 {
+ 		#address-cells = <1>;
+ 		#size-cells = <1>;
+-		compatible = "winbond,w25q128", "jedec,spi-nor";
 +		compatible = "xtx,xt25f128b", "jedec,spi-nor";
-+		reg = <0>;
-+		spi-max-frequency = <40000000>;
-+	};
-+};
-+
-diff --git a/arch/arm/dts/sun8i-v3s.dtsi b/arch/arm/dts/sun8i-v3s.dtsi
-index 2a18ff0706..8156442b79 100644
---- a/arch/arm/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/dts/sun8i-v3s.dtsi
-@@ -231,6 +231,11 @@
- 				drive-strength = <30>;
- 				bias-pull-up;
- 			};
-+
-+			spi0_pins: spi0-pins {
-+				pins = "PC0", "PC1", "PC2", "PC3";
-+				function = "spi0";
-+			};
- 		};
- 
- 		timer@01c20c00 {
-@@ -323,6 +328,21 @@
- 			};
- 		};
- 
-+		spi0: spi@1c68000 {
-+			compatible = "allwinner,sun8i-h3-spi";
-+			reg = <0x01c68000 0x1000>;
-+			interrupts = <GIC_SPI 65 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_SPI0>, <&ccu CLK_SPI0>;
-+			clock-names = "ahb", "mod";
-+			pinctrl-names = "default";
-+			pinctrl-0 = <&spi0_pins>;
-+			resets = <&ccu RST_BUS_SPI0>;
-+			status = "disabled";
-+			#address-cells = <1>;
-+			#size-cells = <0>;
-+		};
-+
-+
- 		gic: interrupt-controller@01c81000 {
- 			compatible = "arm,cortex-a7-gic", "arm,cortex-a15-gic";
- 			reg = <0x01c81000 0x1000>,
+ 		reg = <0>;
+ 		spi-max-frequency = <40000000>;
+ 	};
 diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
-index ae71219296..95694aa568 100644
+index 107562ee49..fec01aeb64 100644
 --- a/configs/pinecube_defconfig
 +++ b/configs/pinecube_defconfig
-@@ -3,5 +3,12 @@ CONFIG_ARCH_SUNXI=y
- CONFIG_SPL=y
- CONFIG_MACH_SUN8I_V3S=y
- CONFIG_DRAM_CLK=360
-+CONFIG_SPL_SPI_SUNXI=y
- CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
+@@ -6,12 +6,18 @@ CONFIG_SUNXI_DRAM_DDR3_1333=y
+ CONFIG_DRAM_CLK=504
+ CONFIG_DRAM_ODT_EN=y
+ CONFIG_I2C0_ENABLE=y
+-CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
+ CONFIG_SPL_I2C_SUPPORT=y
+-# CONFIG_NETDEVICES is not set
++CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
 +CONFIG_DM_MTD=y
 +CONFIG_DM_SPI_FLASH=y
 +CONFIG_SPI_FLASH_SFDP_SUPPORT=y
 +CONFIG_SPI_FLASH_XTX=y
- CONFIG_SUN8I_EMAC=y
++CONFIG_SUN8I_EMAC=y
+ CONFIG_AXP209_POWER=y
+ CONFIG_AXP_DCDC2_VOLT=1250
+ CONFIG_AXP_DCDC3_VOLT=3300
+ CONFIG_AXP_ALDO3_VOLT_SLOPE_08=y
+ CONFIG_AXP_ALDO3_INRUSH_QUIRK=y
+ CONFIG_CONS_INDEX=3
 +CONFIG_SPI=y
 +CONFIG_DM_SPI=y
--- 
-2.28.0
-
-
-From 0804051f3011e001296d0838e332aa352e99742a Mon Sep 17 00:00:00 2001
-From: Daniel Fullmer <danielrf12@gmail.com>
-Date: Sat, 24 Oct 2020 19:06:45 -0700
-Subject: [PATCH 7/7] pinecube: enable bootcmd
-
----
- configs/pinecube_defconfig | 1 +
- 1 file changed, 1 insertion(+)
-
-diff --git a/configs/pinecube_defconfig b/configs/pinecube_defconfig
-index 95694aa568..11501b3eb4 100644
---- a/configs/pinecube_defconfig
-+++ b/configs/pinecube_defconfig
-@@ -4,6 +4,7 @@ CONFIG_SPL=y
- CONFIG_MACH_SUN8I_V3S=y
- CONFIG_DRAM_CLK=360
- CONFIG_SPL_SPI_SUNXI=y
-+CONFIG_CMD_BOOTMENU=y
- CONFIG_DEFAULT_DEVICE_TREE="sun8i-s3-pinecube"
- CONFIG_DM_MTD=y
- CONFIG_DM_SPI_FLASH=y
 -- 
 2.28.0
 
