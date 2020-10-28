@@ -75,7 +75,7 @@ Run `nix-build -A firmware-installer`. Then,
 ```shell
 $ dd if=result/firmware-installer-image.img of=/dev/sdX bs=1024
 ```
-Then, use the menu option available over UART0 to install u-boot to the SPI.
+Then, use the menu option available over UART2 to install u-boot to the SPI.
 
 I initially flashed a bad u-boot, which caused me to be unable to boot from MMC or even FEL.
 I was able to force the Pinecube to load into FEL by grounding the `SPI0_MISO` pin.
