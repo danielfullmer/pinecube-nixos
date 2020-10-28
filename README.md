@@ -18,6 +18,10 @@ It should be accessible over UART2 pins (see pinout on wiki) or SSH.
  - https://www.kernel.org/doc/html/latest/userspace-api/media/v4l/subdev-formats.html
 
 Streaming via rtmp:
+
+Run a RTMP server on a machine on the network (assuming at 192.168.1.200).
+
+On pinecube
 ```shell
 $ media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:UYVY8_2X8/640x480@1/15]'
 $ ffmpeg -s 640x480 -r 15 -i /dev/video0 -vcodec flv -f flv rtmp://192.168.1.200/live/pinecube
