@@ -1,7 +1,7 @@
 # NixOS on Pinecube (Early work in progress)
 
 Build an SD card image with `./build.sh`.
-Prebuilt image [here](https://drive.google.com/file/d/1n8JHk7dfFQIfJX9KqxsTB1Dp_X8N-nVc/view?usp=sharing). (updated 2020-10-27)
+Prebuilt image [here](https://drive.google.com/file/d/1n8JHk7dfFQIfJX9KqxsTB1Dp_X8N-nVc/view?usp=sharing) (last updated 2020-10-27).
 Decompress and flash with:
 ```shell
 $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd -d | dd of=/dev/sdX bs=1024
@@ -83,12 +83,16 @@ Then, I could boot into u-boot and erase the SPI, returning the Pinecube to fact
 
 ## Ethernet
 Working fine in linux, and now also u-boot with patch derived from: https://lists.denx.de/pipermail/u-boot/2020-May/413924.html
+S3 datasheet says it supports up to 1000Mbit, but we only have a 100Mbit PHY: `H1601CG`
+Maybe this is for easier PoE support?
 
 ## USB
-Not working in linux or u-boot
+Not working in linux or u-boot.
 dmesg reports: `supply vcc not found, using dummy regulator`
 
 ## WIFI
+`iwlist wlan0 scan` worked fine.
+Stopped working after starting `wpa_supplicant`.
 Dmesg errors:
 ```
 Oct 19 06:11:31 nixos wpa_supplicant[926]: Successfully initialized wpa_supplicant
