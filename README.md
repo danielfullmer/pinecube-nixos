@@ -1,7 +1,7 @@
 # NixOS on Pinecube (Early work in progress)
 
 Build an SD card image with `./build.sh`.
-Prebuilt image [here](https://drive.google.com/file/d/1n8JHk7dfFQIfJX9KqxsTB1Dp_X8N-nVc/view?usp=sharing) (last updated 2020-10-27).
+Prebuilt image [here](https://drive.google.com/file/d/1A3dreaxXnRpC_tdUey9V5ojnUXhLjLFd/view?usp=sharing) (last updated 2020-11-07).
 Decompress and flash with:
 ```shell
 $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd -d | dd of=/dev/sdX bs=1024
@@ -31,6 +31,15 @@ On receiving machine:
 ```shell
 $ mpv "rtmp://192.168.1.200/live/pinecube" --profile=low-latency --cache-secs=1
 ```
+
+To enable audio in the stream: (see section below for further audio details)
+```shell
+$ media-ctl --set-v4l2 '"ov5640 1-003c":0[fmt:UYVY8_2X8/320x240@1/15]'
+$ ffmpeg -s 320x240 -r 15 -i /dev/video0 -f alsa -ac 1 -ar 22050 -i hw:0,0 -acodec libmp3lame -vcodec flv  -f flv rtmp://192.168.1.200/live/pinecube
+```
+(Ensure that Mic1 is active and unmuted using `alsamixer`)
+CPU usage while encoding required me to also lower camera resolution and also the audio sampling rate.
+Let me know if you find ffmpeg settings that give a good balance between quality, CPU usage, and bitrate.
 
 ## Activating IR LEDs:
 ```shell
@@ -101,9 +110,13 @@ Oct 19 06:11:32 nixos kernel: sunxi-mmc 1c10000.mmc: send stop command failed
 ```
 
 ## Audio
-Is not in currently in DTB at all.
-Maybe use sun7i-a20 as example. It has a "codec" block.
-See the S3 manual, grep for I2S/PCM.
+S3 has significant differences when compared with V3s.
+It has 4 audio inputs (3 mics, 1 line in), and 2 audio outputs (headphone and line out).
+Currently, only the microphone is working. I tried to get audio output working but didn't have any luck.
+Use `alsamixer` to ensure mic is active and unmuted.
+```shell
+$ ffmpeg -f alsa -ar 22050 -i hw:0,0 -acodec mp3 -f flv rtmp://192.168.1.200/live/pinecube
+```
 
 ## Power Supply
 See `/sys/class/power_supply/axp20x-ac`.

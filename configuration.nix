@@ -45,14 +45,13 @@ in
         RFKILL_GPIO y
       '';
     }
-    { name = "pinecube-ir-leds"; patch = ./kernel/0001-ARM-dts-sun8i-s3l-fix-Pinecube-IR-LEDs.patch; }
-    { name = "pinecube-add-battery"; patch = ./kernel/0002-ARM-dts-sun8i-s3l-add-battery-power-supply-to-pinecu.patch; }
   ];
 
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];
 
+  sound.enable = true;
+
   environment.systemPackages = with pkgs; [
-    alsaUtils
     ffmpeg
     (v4l_utils.override { withGUI = false; })
     usbutils
