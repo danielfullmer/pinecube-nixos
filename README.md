@@ -1,7 +1,7 @@
 # NixOS on Pinecube (Early work in progress)
 
 Build an SD card image with `./build.sh`.
-Prebuilt image [here](https://drive.google.com/file/d/1A3dreaxXnRpC_tdUey9V5ojnUXhLjLFd/view?usp=sharing) (last updated 2020-11-07).
+Prebuilt image [here](https://drive.google.com/file/d/1iXVv9R-33DoFKE-WSPZ4XoemhYPZPcU2/view?usp=sharing) (last updated 2020-11-21).
 Decompress and flash with:
 ```shell
 $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd -d | dd of=/dev/sdX bs=1024
@@ -96,8 +96,7 @@ S3 datasheet says it supports up to 1000Mbit, but we only have a 100Mbit PHY: `H
 Maybe this is for easier PoE support?
 
 ## USB
-Not working in linux or u-boot.
-dmesg reports: `supply vcc not found, using dummy regulator`
+Working in linux, currently not in u-boot.
 
 ## WIFI
 `iwlist wlan0 scan` worked fine.
