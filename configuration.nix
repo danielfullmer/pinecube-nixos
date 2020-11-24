@@ -49,6 +49,8 @@ in
 
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];
 
+  zramSwap.enable = true; # 128MB is not much to work with
+
   sound.enable = true;
 
   environment.systemPackages = with pkgs; [
