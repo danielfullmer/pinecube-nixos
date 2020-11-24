@@ -47,6 +47,7 @@ in
     }
   ];
 
+  boot.kernelModules = [ "spi-nor" ]; # Not sure why this doesn't autoload. Provides SPI NOR at /dev/mtd0
   boot.extraModulePackages = [ config.boot.kernelPackages.rtl8189es ];
 
   zramSwap.enable = true; # 128MB is not much to work with

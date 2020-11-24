@@ -76,9 +76,12 @@ $ cat /sys/class/gpio/gpio199/value
 ```
 
 ## SPI NOR
-In Linux, dmesg error: `spi-nor spi0.0: unrecognized JEDEC id bytes: 0b 40 18 0b 40 18`
 The published schematic says it's a `GD5F4GQ4UCYIG`, however the label on the pinecube I have is for an `XT25F128B`.
 And this matches the JEDEC bytes reported in Linux.
+```shell
+$ sudo modprobe spi-nor
+```
+The device is accessible at `/dev/mtd0`.
 
 ### SPI Boot
 Run `nix-build -A firmware-installer`. Then,
