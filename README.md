@@ -103,8 +103,11 @@ Maybe this is for easier PoE support?
 Working in linux, currently not in u-boot.
 
 ## WIFI
-`iwlist wlan0 scan` worked fine.
-Stopped working after starting `wpa_supplicant`.
+Other individuals have reported WiFi is working for them with exactly the same NixOS configuration.
+However, it currently doesn't work for me.
+This may be a hardware / power issue on my device.
+Sometimes, `iwlist wlan0 scan` works fine.
+However, it frequently stopps working after starting `wpa_supplicant`.
 Dmesg errors:
 ```
 Oct 19 06:11:31 nixos wpa_supplicant[926]: Successfully initialized wpa_supplicant
