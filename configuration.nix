@@ -1,33 +1,12 @@
 { config, lib, pkgs, ... }:
 
-let
-  uboot = pkgs.callPackage ./uboot {};
-in
 {
-  imports = [ <nixpkgs/nixos/modules/installer/cd-dvd/sd-image.nix> ];
-
-  nixpkgs.crossSystem = lib.recursiveUpdate lib.systems.examples.armv7l-hf-multiplatform {
-    platform = {
-      name = "pinecube";
-      kernelBaseConfig = "sunxi_defconfig";
-    };
-  };
-
   boot.loader.grub.enable = false;
   boot.loader.generic-extlinux-compatible.enable = true;
   boot.consoleLogLevel = 7;
 
   # cma is 64M by default which is waay too much and we can't even unpack initrd
   boot.kernelParams = [ "console=ttyS0,115200n8" "cma=32M" ];
-
-  sdImage.populateFirmwareCommands = "";
-  sdImage.populateRootCommands = ''
-    mkdir -p ./files/boot
-    ${config.boot.loader.generic-extlinux-compatible.populateCmd} -c ${config.system.build.toplevel} -d ./files/boot
-  '';
-  sdImage.postBuildCommands = ''
-    dd if=${uboot}/u-boot-sunxi-with-spl.bin of=$img bs=1024 seek=8 conv=notrunc
-  '';
 
   # See: https://lore.kernel.org/patchwork/project/lkml/list/?submitter=22013&order=name
   boot.kernelPackages = pkgs.linuxPackages_5_9;
@@ -75,7 +54,15 @@ in
 
   networking.wireless.enable = true;
 
-  ###
+  ### Cross-compilation stuff ###
+  # Natively compiling on the pinecube is infeasible
+
+  nixpkgs.crossSystem = lib.recursiveUpdate lib.systems.examples.armv7l-hf-multiplatform {
+    platform = {
+      name = "pinecube";
+      kernelBaseConfig = "sunxi_defconfig";
+    };
+  };
 
 
   nixpkgs.overlays = [ (self: super: {
