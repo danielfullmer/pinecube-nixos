@@ -7,6 +7,7 @@ in
   imports = [ 
     <nixpkgs/nixos/modules/installer/cd-dvd/sd-image.nix>
     ./configuration.nix
+    ./cross-config.nix
   ];
 
   sdImage.populateFirmwareCommands = "";
