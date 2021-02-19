@@ -1,4 +1,4 @@
-# NixOS on Pinecube (Early work in progress)
+# NixOS on Pinecube
 
 Download / install Nix using the instructions [here](https://nixos.org/download.html).
 Then, build an SD card image with `./build.sh`.
@@ -11,6 +11,8 @@ $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd 
 It should be accessible over UART2 pins (see pinout on wiki) or SSH.
 - Username: `nixos`
 - Password: `nixos`
+
+This repository remains a work-in-progress, with certain features I need still not finished, including hardware accelerated encoding support.
 
 # Additional Notes
 
