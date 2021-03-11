@@ -796,7 +796,7 @@ index 0319327dea3c..35e501ec8073 100644
 +};
 +
 +&codec {
-+	allwinner,pa-gpios = <&pio 1 5 GPIO_ACTIVE_HIGH>; /* PB5 */
++	allwinner,pa-gpio = <&pio 6 6 GPIO_ACTIVE_HIGH>; /*PG6*/
 +	allwinner,audio-routing =
 +		"Speaker", "LINEOUT",
 +		"MIC1", "Mic",
