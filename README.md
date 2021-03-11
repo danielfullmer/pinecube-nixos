@@ -126,9 +126,9 @@ Use `alsamixer` to ensure mic is active and unmuted.
 $ ffmpeg -f alsa -ar 22050 -i hw:0,0 -acodec mp3 -f flv rtmp://192.168.1.200/live/pinecube
 ```
 
-To play an audio file, first turn up the "Line Out" and "DAC" controls in alsamixer. Next run:
+To test your sepaker, first turn up the "Line Out" and "DAC" controls in alsamixer. Next run:
 ```shell
-$ aplay test.wav
+$ speaker-test -c2 -t wav
 ``
 You should be able to hear the audio being played via the speaker.
 
