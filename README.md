@@ -120,12 +120,17 @@ Oct 19 06:11:32 nixos kernel: sunxi-mmc 1c10000.mmc: send stop command failed
 ## Audio
 S3 has significant differences when compared with V3s.
 It has 4 audio inputs (3 mics, 1 line in), and 2 audio outputs (headphone and line out).
-Currently, only the microphone is working. I tried to get audio output working but didn't have any luck.
 PineCube MainBoard schematic says that the audio amplifier is connected in pin PB5 (PWM1) but in reality it is connected to PG6 (UART1_TX).
 Use `alsamixer` to ensure mic is active and unmuted.
 ```shell
 $ ffmpeg -f alsa -ar 22050 -i hw:0,0 -acodec mp3 -f flv rtmp://192.168.1.200/live/pinecube
 ```
+
+To play an audio file, first turn up the "Line Out" and "DAC" controls in alsamixer. Next run:
+```shell
+$ aplay test.wav
+``
+You should be able to hear the audio being played via the speaker.
 
 ## Power Supply
 See `/sys/class/power_supply/axp20x-ac`.
