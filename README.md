@@ -2,7 +2,7 @@
 
 Download / install Nix using the instructions [here](https://nixos.org/download.html).
 Then, build an SD card image with `./build.sh`.
-Otherwise, a prebuilt image is available [here](https://drive.google.com/file/d/1iXVv9R-33DoFKE-WSPZ4XoemhYPZPcU2/view?usp=sharing) (last updated 2020-11-21).
+Otherwise, a prebuilt image is available [here](https://drive.google.com/file/d/1P1W-cUGVXKch123DayvI1JpxyViJfkTF/view?usp=sharing) (last updated 2021-03-11).
 Decompress and flash with:
 ```shell
 $ cat ./result/sd-image/nixos-sd-image-21.03pre-git-armv7l-linux.img.zst | zstd -d | dd of=/dev/sdX bs=1024
