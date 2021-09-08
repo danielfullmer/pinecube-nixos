@@ -8,8 +8,7 @@
   # cma is 64M by default which is waay too much and we can't even unpack initrd
   boot.kernelParams = [ "console=ttyS0,115200n8" "cma=32M" ];
 
-  # See: https://lore.kernel.org/patchwork/project/lkml/list/?submitter=22013&order=name
-  boot.kernelPackages = pkgs.linuxPackages_5_9;
+  boot.kernelPackages = pkgs.linuxPackages_5_14;
   boot.kernelPatches = [
     { name = "pine64-pinecube";
       patch = ./kernel/Pine64-PineCube-support.patch;

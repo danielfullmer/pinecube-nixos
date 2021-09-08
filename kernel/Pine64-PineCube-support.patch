@@ -1,608 +1,7 @@
-From 17bd28ff69e61f881d54cf4c606c04b55a43d478 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 08:57:03 +0800
-Subject: [PATCH 01/18] ARM: dts: sun8i: V3/V3s/S3/S3L: add Ethernet support
-
-The Allwinner V3/V3s/S3L/SoChip S3 Ethernet MAC and internal PHY is quite
-similar to the ones on Allwinner H3, except for V3s the external MII is
-not wired out.
-
-Add ethernet support to V3/V3s/S3/S3L.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3.dtsi  | 13 ++++++++
- arch/arm/boot/dts/sun8i-v3s.dtsi | 52 ++++++++++++++++++++++++++++++++
- 2 files changed, 65 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3.dtsi b/arch/arm/boot/dts/sun8i-v3.dtsi
-index 6ae8645ade50..ca4672ed2e02 100644
---- a/arch/arm/boot/dts/sun8i-v3.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3.dtsi
-@@ -9,6 +9,19 @@ &ccu {
- 	compatible = "allwinner,sun8i-v3-ccu";
- };
- 
-+&emac {
-+	/delete-property/ phy-handle;
-+	/delete-property/ phy-mode;
-+};
-+
-+&mdio_mux {
-+	external_mdio: mdio@2 {
-+		reg = <2>;
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+	};
-+};
-+
- &pio {
- 	compatible = "allwinner,sun8i-v3-pinctrl";
- };
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index e5312869c0d2..b4069df84d10 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -138,6 +138,15 @@ mixer0_out_tcon0: endpoint {
- 			};
- 		};
- 
-+		syscon: system-control@1c00000 {
-+			compatible = "allwinner,sun8i-v3s-system-control",
-+				     "allwinner,sun8i-h3-system-control";
-+			reg = <0x01c00000 0x1000>;
-+			#address-cells = <1>;
-+			#size-cells = <1>;
-+			ranges;
-+		};
-+
- 		tcon0: lcd-controller@1c0c000 {
- 			compatible = "allwinner,sun8i-v3s-tcon";
- 			reg = <0x01c0c000 0x1000>;
-@@ -404,6 +413,49 @@ i2c1: i2c@1c2b000 {
- 			#size-cells = <0>;
- 		};
- 
-+		emac: ethernet@1c30000 {
-+			compatible = "allwinner,sun8i-v3s-emac";
-+			syscon = <&syscon>;
-+			reg = <0x01c30000 0x10000>;
-+			interrupts = <GIC_SPI 82 IRQ_TYPE_LEVEL_HIGH>;
-+			interrupt-names = "macirq";
-+			resets = <&ccu RST_BUS_EMAC>;
-+			reset-names = "stmmaceth";
-+			clocks = <&ccu CLK_BUS_EMAC>;
-+			clock-names = "stmmaceth";
-+			phy-handle = <&int_mii_phy>;
-+			phy-mode = "mii";
-+			status = "disabled";
-+
-+			mdio: mdio {
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+				compatible = "snps,dwmac-mdio";
-+			};
-+
-+			mdio_mux: mdio-mux {
-+				compatible = "allwinner,sun8i-h3-mdio-mux";
-+				#address-cells = <1>;
-+				#size-cells = <0>;
-+
-+				mdio-parent-bus = <&mdio>;
-+				/* Only one MDIO is usable at the time */
-+				internal_mdio: mdio@1 {
-+					compatible = "allwinner,sun8i-h3-mdio-internal";
-+					reg = <1>;
-+					#address-cells = <1>;
-+					#size-cells = <0>;
-+
-+					int_mii_phy: ethernet-phy@1 {
-+						compatible = "ethernet-phy-ieee802.3-c22";
-+						reg = <1>;
-+						clocks = <&ccu CLK_BUS_EPHY>;
-+						resets = <&ccu RST_BUS_EPHY>;
-+					};
-+				};
-+			};
-+		};
-+
- 		spi0: spi@1c68000 {
- 			compatible = "allwinner,sun8i-h3-spi";
- 			reg = <0x01c68000 0x1000>;
--- 
-2.29.0
-
-
-From c3e603b4fb67bcc5da7361c46c11f6101835d54c Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 08:58:53 +0800
-Subject: [PATCH 02/18] ARM: dts: sun8i: V3/V3s/S3/S3L: add pinctrl for UART2
- RX/TX
-
-The UART2 RX/TX pins on Allwinner V3 series is at PB0/1, which is used
-as debugging UART on some boards.
-
-Add pinctrl node for them.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 7 +++++++
- 1 file changed, 7 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index b4069df84d10..3932d227ac1c 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -311,6 +311,11 @@ uart0_pb_pins: uart0-pb-pins {
- 				function = "uart0";
- 			};
- 
-+			uart2_pins: uart2-pins {
-+				pins = "PB0", "PB1";
-+				function = "uart2";
-+			};
-+
- 			mmc0_pins: mmc0-pins {
- 				pins = "PF0", "PF1", "PF2", "PF3",
- 				       "PF4", "PF5";
-@@ -386,6 +391,8 @@ uart2: serial@1c28800 {
- 			reg-io-width = <4>;
- 			clocks = <&ccu CLK_BUS_UART2>;
- 			resets = <&ccu RST_BUS_UART2>;
-+			pinctrl-0 = <&uart2_pins>;
-+			pinctrl-names = "default";
- 			status = "disabled";
- 		};
- 
--- 
-2.29.0
-
-
-From ada1e0b448d8fd71eac999adbc3a179c0395002a Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 08:58:54 +0800
-Subject: [PATCH 03/18] ARM: dts: sun8i: V3/V3s/S3/S3L: add CSI1 device node
-
-The CSI1 controller of V3/V3s/S3/S3L chips is used for parallel CSI.
-
-Add the device tree node of it.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 12 ++++++++++++
- 1 file changed, 12 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index 3932d227ac1c..f221018d7cf3 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -477,6 +477,18 @@ spi0: spi@1c68000 {
- 			#size-cells = <0>;
- 		};
- 
-+		csi1: camera@1cb4000 {
-+			compatible = "allwinner,sun8i-v3s-csi";
-+			reg = <0x01cb4000 0x3000>;
-+			interrupts = <GIC_SPI 84 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_CSI>,
-+				 <&ccu CLK_CSI1_SCLK>,
-+				 <&ccu CLK_DRAM_CSI>;
-+			clock-names = "bus", "mod", "ram";
-+			resets = <&ccu RST_BUS_CSI>;
-+			status = "disabled";
-+		};
-+
- 		gic: interrupt-controller@1c81000 {
- 			compatible = "arm,gic-400";
- 			reg = <0x01c81000 0x1000>,
--- 
-2.29.0
-
-
-From 48cf51ab9126ea032f464157b2cf2a40f9a49be4 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 09:00:11 +0800
-Subject: [PATCH 04/18] ARM: dts: sun8i: V3/V3s/S3/S3L: add pinctrl for 8-bit
- parallel CSI
-
-The CSI1 controller of V3/V3s/S3/S3L SoCs is used for parallel CSI.
-
-As we're going to add support for Pine64 SCC board, which uses 8-bit
-parallel CSI (and the MCLK output), add the pinctrl node of 8-bit
-CSI and MCLK to the DTSI file.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 14 ++++++++++++++
- 1 file changed, 14 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index f221018d7cf3..2727756bcd91 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -301,6 +301,20 @@ pio: pinctrl@1c20800 {
- 			interrupt-controller;
- 			#interrupt-cells = <3>;
- 
-+			/omit-if-no-ref/
-+			csi1_8bit_pins: csi1-8bit-pins {
-+				pins = "PE0", "PE2", "PE3", "PE8", "PE9",
-+				       "PE10", "PE11", "PE12", "PE13", "PE14",
-+				       "PE15";
-+				function = "csi";
-+			};
-+
-+			/omit-if-no-ref/
-+			csi1_mclk_pin: csi1-mclk-pin {
-+				pins = "PE1";
-+				function = "csi";
-+			};
-+
- 			i2c0_pins: i2c0-pins {
- 				pins = "PB6", "PB7";
- 				function = "i2c0";
--- 
-2.29.0
-
-
-From e7b7e35f417676ac1e692730c16ab50f9d6e4da4 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 09:00:12 +0800
-Subject: [PATCH 05/18] ARM: dts: sun8i: V3/V3s/S3/S3L: add pinctrl for I2C1 at
- PE bank
-
-I2C1 controller is available at PE bank, usually used for
-connecting an I2C-controlled camera sensor.
-
-Add pinctrl node for it.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 6 ++++++
- 1 file changed, 6 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index 2727756bcd91..3cd3b58c2587 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -320,6 +320,12 @@ i2c0_pins: i2c0-pins {
- 				function = "i2c0";
- 			};
- 
-+			/omit-if-no-ref/
-+			i2c1_pe_pins: i2c1-pe-pins {
-+				pins = "PE21", "PE22";
-+				function = "i2c1";
-+			};
-+
- 			uart0_pb_pins: uart0-pb-pins {
- 				pins = "PB8", "PB9";
- 				function = "uart0";
--- 
-2.29.0
-
-
-From 0ae37e2d02098a198f3d149b2e36b8e862a121ee Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 09:02:14 +0800
-Subject: [PATCH 06/18] dt-bindings: arm: sunxi: add Pine64 PineCube binding
-
-Document board compatible names for Pine64 PineCube IP camera.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- Documentation/devicetree/bindings/arm/sunxi.yaml | 5 +++++
- 1 file changed, 5 insertions(+)
-
-diff --git a/Documentation/devicetree/bindings/arm/sunxi.yaml b/Documentation/devicetree/bindings/arm/sunxi.yaml
-index efc9118233b4..ba4a380ba4a3 100644
---- a/Documentation/devicetree/bindings/arm/sunxi.yaml
-+++ b/Documentation/devicetree/bindings/arm/sunxi.yaml
-@@ -626,6 +626,11 @@ properties:
-           - const: pine64,pine64-plus
-           - const: allwinner,sun50i-a64
- 
-+      - description: Pine64 PineCube
-+        items:
-+          - const: pine64,pinecube
-+          - const: allwinner,sun8i-v3
-+
-       - description: Pine64 PineH64 model A
-         items:
-           - const: pine64,pine-h64
--- 
-2.29.0
-
-
-From 6dca04137361a821df34ef83b6f34fd1aa9fbb73 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Wed, 23 Sep 2020 09:02:15 +0800
-Subject: [PATCH 07/18] ARM: dts: sun8i: s3l: add support for Pine64 PineCube
- IP camera
-
-The Pine64 PineCube IP camera is an IP camera with SoChip S3 SoC.
-
-It comes with a main board, an expansion board and a camera.
-
-The main board features a Micro-USB power-only jack, a USB Type-A port,
-an Ethernet port connected to the internal PHY of the SoC and a Realtek
-RTL8189ES SDIO Wi-Fi module. A RGB LCD connector is reserved on the
-board.
-
-The expansion board features a TF slot, a microphone, a speaker
-connector with on-board amplifier and a few IR LEDs.
-
-Add support for the kit, with features on the main board and the
-expansion board now.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/Makefile              |   1 +
- arch/arm/boot/dts/sun8i-s3-pinecube.dts | 235 ++++++++++++++++++++++++
- 2 files changed, 236 insertions(+)
- create mode 100644 arch/arm/boot/dts/sun8i-s3-pinecube.dts
-
-diff --git a/arch/arm/boot/dts/Makefile b/arch/arm/boot/dts/Makefile
-index 4572db3fa5ae..4363ba564bb4 100644
---- a/arch/arm/boot/dts/Makefile
-+++ b/arch/arm/boot/dts/Makefile
-@@ -1194,6 +1194,7 @@ dtb-$(CONFIG_MACH_SUN8I) += \
- 	sun8i-r16-parrot.dtb \
- 	sun8i-r40-bananapi-m2-ultra.dtb \
- 	sun8i-s3-lichee-zero-plus.dtb \
-+	sun8i-s3-pinecube.dtb \
- 	sun8i-t3-cqa3t-bv3.dtb \
- 	sun8i-v3s-licheepi-zero.dtb \
- 	sun8i-v3s-licheepi-zero-dock.dtb \
-diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-new file mode 100644
-index 000000000000..9bab6b7f4014
---- /dev/null
-+++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-@@ -0,0 +1,235 @@
-+// SPDX-License-Identifier: (GPL-2.0+ OR X11)
-+/*
-+ * Copyright 2019 Icenowy Zheng <icenowy@aosc.io>
-+ */
-+
-+/dts-v1/;
-+#include "sun8i-v3.dtsi"
-+#include <dt-bindings/gpio/gpio.h>
-+#include <dt-bindings/input/input.h>
-+
-+/ {
-+	model = "PineCube IP Camera";
-+	compatible = "pine64,pinecube", "allwinner,sun8i-s3";
-+
-+	aliases {
-+		serial0 = &uart2;
-+	};
-+
-+	chosen {
-+		stdout-path = "serial0:115200n8";
-+	};
-+
-+	leds {
-+		compatible = "gpio-leds";
-+
-+		led1 {
-+			label = "pine64:ir:led1";
-+			gpios = <&pio 1 10 GPIO_ACTIVE_LOW>; /* PB10 */
-+		};
-+
-+		led2 {
-+			label = "pine64:ir:led2";
-+			gpios = <&pio 1 12 GPIO_ACTIVE_LOW>; /* PB12 */
-+		};
-+	};
-+
-+	reg_vcc5v0: vcc5v0 {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vcc5v0";
-+		regulator-min-microvolt = <5000000>;
-+		regulator-max-microvolt = <5000000>;
-+	};
-+
-+	reg_vcc_wifi: vcc-wifi {
-+		compatible = "regulator-fixed";
-+		regulator-name = "vcc-wifi";
-+		regulator-min-microvolt = <3300000>;
-+		regulator-max-microvolt = <3300000>;
-+		gpio = <&pio 1 2 GPIO_ACTIVE_LOW>; /* PB2 WIFI-EN */
-+		vin-supply = <&reg_dcdc3>;
-+		startup-delay-us = <200000>;
-+	};
-+
-+	wifi_pwrseq: wifi_pwrseq {
-+		compatible = "mmc-pwrseq-simple";
-+		reset-gpios = <&pio 1 3 GPIO_ACTIVE_LOW>; /* PB3 WIFI-RST */
-+		post-power-on-delay-ms = <200>;
-+	};
-+};
-+
-+&csi1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&csi1_8bit_pins>;
-+	status = "okay";
-+
-+	port {
-+		#address-cells = <1>;
-+		#size-cells = <0>;
-+
-+		csi1_ep: endpoint {
-+			remote-endpoint = <&ov5640_ep>;
-+			bus-width = <8>;
-+			hsync-active = <1>; /* Active high */
-+			vsync-active = <0>; /* Active low */
-+			data-active = <1>;  /* Active high */
-+			pclk-sample = <1>;  /* Rising */
-+		};
-+	};
-+};
-+
-+&emac {
-+	phy-handle = <&int_mii_phy>;
-+	phy-mode = "mii";
-+	status = "okay";
-+};
-+
-+&i2c0 {
-+	status = "okay";
-+
-+	axp209: pmic@34 {
-+		compatible = "x-powers,axp203",
-+			     "x-powers,axp209";
-+		reg = <0x34>;
-+		interrupt-parent = <&gic>;
-+		interrupts = <GIC_SPI 32 IRQ_TYPE_LEVEL_HIGH>;
-+		interrupt-controller;
-+		#interrupt-cells = <1>;
-+	};
-+};
-+
-+&i2c1 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&i2c1_pe_pins>;
-+	status = "okay";
-+
-+	ov5640: camera@3c {
-+		compatible = "ovti,ov5640";
-+		reg = <0x3c>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&csi1_mclk_pin>;
-+		clocks = <&ccu CLK_CSI1_MCLK>;
-+		clock-names = "xclk";
-+
-+		AVDD-supply = <&reg_ldo3>;
-+		DOVDD-supply = <&reg_ldo3>;
-+		DVDD-supply = <&reg_ldo4>;
-+		reset-gpios = <&pio 4 23 GPIO_ACTIVE_LOW>; /* PE23 */
-+		powerdown-gpios = <&pio 4 24 GPIO_ACTIVE_HIGH>; /* PE24 */
-+
-+		port {
-+			ov5640_ep: endpoint {
-+				remote-endpoint = <&csi1_ep>;
-+				bus-width = <8>;
-+				hsync-active = <1>; /* Active high */
-+				vsync-active = <0>; /* Active low */
-+				data-active = <1>;  /* Active high */
-+				pclk-sample = <1>;  /* Rising */
-+			};
-+		};
-+	};
-+};
-+
-+&lradc {
-+	vref-supply = <&reg_ldo2>;
-+	status = "okay";
-+
-+	button-200 {
-+		label = "Setup";
-+		linux,code = <KEY_SETUP>;
-+		channel = <0>;
-+		voltage = <190000>;
-+	};
-+};
-+
-+&mmc0 {
-+	vmmc-supply = <&reg_dcdc3>;
-+	bus-width = <4>;
-+	cd-gpios = <&pio 5 6 GPIO_ACTIVE_LOW>;
-+	status = "okay";
-+};
-+
-+&mmc1 {
-+	vmmc-supply = <&reg_vcc_wifi>;
-+	vqmmc-supply = <&reg_dcdc3>;
-+	mmc-pwrseq = <&wifi_pwrseq>;
-+	bus-width = <4>;
-+	non-removable;
-+	status = "okay";
-+};
-+
-+&pio {
-+	vcc-pd-supply = <&reg_dcdc3>;
-+	vcc-pe-supply = <&reg_ldo3>;
-+};
-+
-+#include "axp209.dtsi"
-+
-+&ac_power_supply {
-+	status = "okay";
-+};
-+
-+&reg_dcdc2 {
-+	regulator-always-on;
-+	regulator-min-microvolt = <1250000>;
-+	regulator-max-microvolt = <1250000>;
-+	regulator-name = "vdd-sys-cpu-ephy";
-+};
-+
-+&reg_dcdc3 {
-+	regulator-always-on;
-+	regulator-min-microvolt = <3300000>;
-+	regulator-max-microvolt = <3300000>;
-+	regulator-name = "vcc-3v3";
-+};
-+
-+&reg_ldo1 {
-+	regulator-name = "vdd-rtc";
-+};
-+
-+&reg_ldo2 {
-+	regulator-always-on;
-+	regulator-min-microvolt = <3000000>;
-+	regulator-max-microvolt = <3000000>;
-+	regulator-name = "avcc";
-+};
-+
-+&reg_ldo3 {
-+	regulator-min-microvolt = <2800000>;
-+	regulator-max-microvolt = <2800000>;
-+	regulator-name = "avdd-dovdd-2v8-csi";
-+	regulator-soft-start;
-+	regulator-ramp-delay = <1600>;
-+};
-+
-+&reg_ldo4 {
-+	regulator-min-microvolt = <1800000>;
-+	regulator-max-microvolt = <1800000>;
-+	regulator-name = "dvdd-1v8-csi";
-+};
-+
-+&spi0 {
-+	status = "okay";
-+
-+	flash@0 {
-+		#address-cells = <1>;
-+		#size-cells = <1>;
-+		compatible = "winbond,w25q128", "jedec,spi-nor";
-+		reg = <0>;
-+		spi-max-frequency = <40000000>;
-+	};
-+};
-+
-+&uart2 {
-+	status = "okay";
-+};
-+
-+&usb_otg {
-+	dr_mode = "host";
-+	status = "okay";
-+};
-+
-+&usbphy {
-+	usb0_vbus-supply = <&reg_vcc5v0>;
-+	status = "okay";
-+};
--- 
-2.29.0
-
-
-From 7ad2976267f04f3b29327e470c9698bd689775d8 Mon Sep 17 00:00:00 2001
+From 0f773f213ce09c02aa44a59d812c1518a6cb3472 Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Fri, 23 Oct 2020 16:04:15 -0700
-Subject: [PATCH 08/18] ARM: dts: sun8i: s3l: fix Pinecube IR LEDs
+Subject: [PATCH 1/5] ARM: dts: sun8i: s3l: fix Pinecube IR LEDs
 
 Signed-off-by: Daniel Fullmer <danielrf12@gmail.com>
 ---
@@ -610,7 +9,7 @@ Signed-off-by: Daniel Fullmer <danielrf12@gmail.com>
  1 file changed, 2 insertions(+), 2 deletions(-)
 
 diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-index 9bab6b7f4014..a4adf52ef406 100644
+index 20966e954eda..467cb3be2f2d 100644
 --- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
 +++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
 @@ -25,12 +25,12 @@ leds {
@@ -629,13 +28,13 @@ index 9bab6b7f4014..a4adf52ef406 100644
  	};
  
 -- 
-2.29.0
+2.32.0
 
 
-From 08043145ab7046e85339a9bd3221cc8ee53e64e5 Mon Sep 17 00:00:00 2001
+From af1e439047cb74ee13d2fa919d789f0882c978b6 Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Fri, 23 Oct 2020 16:05:10 -0700
-Subject: [PATCH 09/18] ARM: dts: sun8i: s3l: add battery power supply to
+Subject: [PATCH 2/5] ARM: dts: sun8i: s3l: add battery power supply to
  pinecube
 
 Signed-off-by: Daniel Fullmer <danielrf12@gmail.com>
@@ -644,10 +43,10 @@ Signed-off-by: Daniel Fullmer <danielrf12@gmail.com>
  1 file changed, 4 insertions(+)
 
 diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-index a4adf52ef406..0319327dea3c 100644
+index 467cb3be2f2d..ca2ab55f141a 100644
 --- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
 +++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-@@ -169,6 +169,10 @@ &ac_power_supply {
+@@ -162,6 +162,10 @@ &ac_power_supply {
  	status = "okay";
  };
  
@@ -659,144 +58,31 @@ index a4adf52ef406..0319327dea3c 100644
  	regulator-always-on;
  	regulator-min-microvolt = <1250000>;
 -- 
-2.29.0
+2.32.0
 
 
-From 009e2c4615d99fcfe4fdaa8c1761afe649302a84 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.xyz>
-Date: Wed, 24 May 2017 18:06:05 +0800
-Subject: [PATCH 10/18] ARM: dts: sun8i: add DMA engine in V3s DTSI
-
-Allwinner V3s SoC features a DMA engine.
-
-Add it in the DTSI file.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.xyz>
-Acked-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 9 +++++++++
- 1 file changed, 9 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index 3cd3b58c2587..4203a0964864 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -147,6 +147,15 @@ syscon: system-control@1c00000 {
- 			ranges;
- 		};
- 
-+		dma: dma-controller@01c02000 {
-+			compatible = "allwinner,sun8i-v3s-dma";
-+			reg = <0x01c02000 0x1000>;
-+			interrupts = <GIC_SPI 50 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_DMA>;
-+			resets = <&ccu RST_BUS_DMA>;
-+			#dma-cells = <1>;
-+		};
-+
- 		tcon0: lcd-controller@1c0c000 {
- 			compatible = "allwinner,sun8i-v3s-tcon";
- 			reg = <0x01c0c000 0x1000>;
--- 
-2.29.0
-
-
-From 92cd60e77ba64615a6182f74e9bb23e2cb863100 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.xyz>
-Date: Wed, 24 May 2017 18:06:06 +0800
-Subject: [PATCH 11/18] ARM: dts: sun8i: add audio codec support into V3s DTSI
-
-Allwinner V3s SoC features an internal audio codec like the one in H3,
-and a analog codec like the one in H3/A23 (but much simpler).
-
-Add them in the DTSI file.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.xyz>
-Acked-by: Chen-Yu Tsai <wens@csie.org>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 32 ++++++++++++++++++++++++++++++++
- 1 file changed, 32 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index 4203a0964864..0a933c9dc779 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -383,6 +383,33 @@ wdt0: watchdog@1c20ca0 {
- 			clocks = <&osc24M>;
- 		};
- 
-+		i2s0: i2s@1c22000 {
-+			#sound-dai-cells = <0>;
-+			compatible = "allwinner,sun8i-h3-i2s";
-+			reg = <0x01c22000 0x400>;
-+			interrupts = <GIC_SPI 13 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_I2S0>, <&ccu CLK_I2S0>;
-+			clock-names = "apb", "mod";
-+			dmas = <&dma 3>, <&dma 3>;
-+			resets = <&ccu RST_BUS_I2S0>; /* TODO: Areset/sun8i-v3s-ccu says this isn't available on V3s */
-+			dma-names = "rx", "tx";
-+			status = "disabled";
-+		};
-+
-+		codec: codec@01c22c00 {
-+			#sound-dai-cells = <0>;
-+			compatible = "allwinner,sun8i-v3s-codec";
-+			reg = <0x01c22c00 0x400>;
-+			interrupts = <GIC_SPI 29 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_CODEC>, <&ccu CLK_AC_DIG>;
-+			clock-names = "apb", "codec";
-+			resets = <&ccu RST_BUS_CODEC>;
-+			dmas = <&dma 15>, <&dma 15>;
-+			dma-names = "rx", "tx";
-+			allwinner,codec-analog-controls = <&codec_analog>;
-+			status = "disabled";
-+		};
-+
- 		lradc: lradc@1c22800 {
- 			compatible = "allwinner,sun4i-a10-lradc-keys";
- 			reg = <0x01c22800 0x400>;
-@@ -390,6 +417,11 @@ lradc: lradc@1c22800 {
- 			status = "disabled";
- 		};
- 
-+		codec_analog: codec-analog@01c23000 {
-+			compatible = "allwinner,sun8i-v3s-codec-analog";
-+			reg = <0x01c23000 0x4>;
-+		};
-+
- 		uart0: serial@1c28000 {
- 			compatible = "snps,dw-apb-uart";
- 			reg = <0x01c28000 0x400>;
--- 
-2.29.0
-
-
-From c742763da8b136f1a62043531d5cf6c570732b0f Mon Sep 17 00:00:00 2001
+From 0ee87ef24ab69acf82801173a5eba12e8503d23e Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Sat, 24 Oct 2020 15:13:51 -0700
-Subject: [PATCH 12/18] ARM: dts: sun8i: s3l: enable audio on Pinecube
+Subject: [PATCH 3/5] ARM: dts: sun8i: s3l: enable audio on Pinecube
 
 TODO: Do this properly. Maybe add sun8i-s3-codec-analog
 ---
- arch/arm/boot/dts/sun8i-s3-pinecube.dts | 13 +++++++++++++
- sound/soc/sunxi/sun8i-codec-analog.c    |  4 ++++
- 2 files changed, 17 insertions(+)
+ arch/arm/boot/dts/sun8i-s3-pinecube.dts | 9 +++++++++
+ sound/soc/sunxi/sun8i-codec-analog.c    | 4 ++++
+ 2 files changed, 13 insertions(+)
 
 diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-index 0319327dea3c..35e501ec8073 100644
+index ca2ab55f141a..e9bbaedc6659 100644
 --- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
 +++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-@@ -237,3 +237,16 @@ &usbphy {
+@@ -230,3 +230,12 @@ &usbphy {
  	usb0_vbus-supply = <&reg_vcc5v0>;
  	status = "okay";
  };
 +
-+&i2s0 {
-+	status = "okay";
-+};
-+
 +&codec {
-+	allwinner,pa-gpio = <&pio 6 6 GPIO_ACTIVE_HIGH>; /*PG6*/
++	allwinner,pa-gpios = <&pio 6 5 GPIO_ACTIVE_HIGH>; /* PG6 */
 +	allwinner,audio-routing =
 +		"Speaker", "LINEOUT",
 +		"MIC1", "Mic",
@@ -819,13 +105,13 @@ index be872eefa61e..b806121abeeb 100644
  
  static int sun8i_codec_analog_cmpnt_probe(struct snd_soc_component *cmpnt)
 -- 
-2.29.0
+2.32.0
 
 
-From 154d022acdfa415fbb1969ace6f74a21028fc9af Mon Sep 17 00:00:00 2001
+From edefa8e06979e4050a0bdd91387a09818416e8e1 Mon Sep 17 00:00:00 2001
 From: microcai <microcaicai@gmail.com>
 Date: Mon, 29 Jun 2020 23:36:40 +0800
-Subject: [PATCH 13/18] spi-nor: Add support for xt25f32b/xt25f128b
+Subject: [PATCH 4/5] spi-nor: Add support for xt25f32b/xt25f128b
 
 The RockPi4b dev board ship with xt25f32b solded. add these ids so the
 board's spi flash can be accessed within linux.
@@ -840,7 +126,7 @@ Signed-off-by: microcai <microcaicai@gmail.com>
  create mode 100644 drivers/mtd/spi-nor/xtx.c
 
 diff --git a/drivers/mtd/spi-nor/Makefile b/drivers/mtd/spi-nor/Makefile
-index 653923896205..3f7a52d7fa0b 100644
+index 6b904e439372..e344077e3054 100644
 --- a/drivers/mtd/spi-nor/Makefile
 +++ b/drivers/mtd/spi-nor/Makefile
 @@ -17,6 +17,7 @@ spi-nor-objs			+= sst.o
@@ -852,10 +138,10 @@ index 653923896205..3f7a52d7fa0b 100644
  
  obj-$(CONFIG_MTD_SPI_NOR)	+= controllers/
 diff --git a/drivers/mtd/spi-nor/core.c b/drivers/mtd/spi-nor/core.c
-index 0369d98b2d12..88e91af97ef3 100644
+index cc08bd707378..7ab7683098c5 100644
 --- a/drivers/mtd/spi-nor/core.c
 +++ b/drivers/mtd/spi-nor/core.c
-@@ -2024,6 +2024,7 @@ static const struct spi_nor_manufacturer *manufacturers[] = {
+@@ -1846,6 +1846,7 @@ static const struct spi_nor_manufacturer *manufacturers[] = {
  	&spi_nor_winbond,
  	&spi_nor_xilinx,
  	&spi_nor_xmc,
@@ -864,17 +150,17 @@ index 0369d98b2d12..88e91af97ef3 100644
  
  static const struct flash_info *
 diff --git a/drivers/mtd/spi-nor/core.h b/drivers/mtd/spi-nor/core.h
-index 6f2f6b27173f..cea8c0c25c9f 100644
+index 3348e1dd1445..fd2771fbe710 100644
 --- a/drivers/mtd/spi-nor/core.h
 +++ b/drivers/mtd/spi-nor/core.h
-@@ -398,6 +398,7 @@ extern const struct spi_nor_manufacturer spi_nor_sst;
+@@ -489,6 +489,7 @@ extern const struct spi_nor_manufacturer spi_nor_sst;
  extern const struct spi_nor_manufacturer spi_nor_winbond;
  extern const struct spi_nor_manufacturer spi_nor_xilinx;
  extern const struct spi_nor_manufacturer spi_nor_xmc;
 +extern const struct spi_nor_manufacturer spi_nor_xtx;
  
- int spi_nor_write_enable(struct spi_nor *nor);
- int spi_nor_write_disable(struct spi_nor *nor);
+ extern const struct attribute_group *spi_nor_sysfs_groups[];
+ 
 diff --git a/drivers/mtd/spi-nor/xtx.c b/drivers/mtd/spi-nor/xtx.c
 new file mode 100644
 index 000000000000..541fd8e52b79
@@ -903,23 +189,23 @@ index 000000000000..541fd8e52b79
 + .nparts = ARRAY_SIZE(xtx_parts),
 +};
 -- 
-2.29.0
+2.32.0
 
 
-From 2c19e5196d862d18e65d990dc5c48d91a5a868d1 Mon Sep 17 00:00:00 2001
+From 4feb2eff3ec5905ad0687daa193cc5dcc0e6e17a Mon Sep 17 00:00:00 2001
 From: Daniel Fullmer <danielrf12@gmail.com>
 Date: Sat, 24 Oct 2020 17:02:30 -0700
-Subject: [PATCH 14/18] ARM: dts: sun8i: s3l: use flash for pinecube
+Subject: [PATCH 5/5] ARM: dts: sun8i: s3l: use flash for pinecube
 
 ---
  arch/arm/boot/dts/sun8i-s3-pinecube.dts | 2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
 diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-index 35e501ec8073..edfa6847735c 100644
+index e9bbaedc6659..71b34d1edf9b 100644
 --- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
 +++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-@@ -218,7 +218,7 @@ &spi0 {
+@@ -211,7 +211,7 @@ &spi0 {
  	flash@0 {
  		#address-cells = <1>;
  		#size-cells = <1>;
@@ -929,194 +215,5 @@ index 35e501ec8073..edfa6847735c 100644
  		spi-max-frequency = <40000000>;
  	};
 -- 
-2.29.0
-
-
-From 7a7f126557d5d4910b908cb83f39fdb294dbcd05 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Fri, 20 Nov 2020 13:08:51 +0800
-Subject: [PATCH 15/18] ARM: dts: sun8i: v3s: fix GIC node memory range
-
-Currently the GIC node in V3s DTSI follows some old DT examples, and
-being broken. This leads a warning at boot.
-
-Fix this.
-
-Fixes: f989086ccbc6 ("ARM: dts: sunxi: add dtsi file for V3s SoC")
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index 0a933c9dc779..fe6339ad52b2 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -553,7 +553,7 @@ csi1: camera@1cb4000 {
- 		gic: interrupt-controller@1c81000 {
- 			compatible = "arm,gic-400";
- 			reg = <0x01c81000 0x1000>,
--			      <0x01c82000 0x1000>,
-+			      <0x01c82000 0x2000>,
- 			      <0x01c84000 0x2000>,
- 			      <0x01c86000 0x2000>;
- 			interrupt-controller;
--- 
-2.29.0
-
-
-From aa361de51f3d0909c8e4c1ee8f9374e98f72ac06 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Sun, 22 Nov 2020 08:38:39 +0800
-Subject: [PATCH 16/18] ARM: dts: sun8i: v3s: add EHCI/OHCI0 device nodes
-
-The USB PHY 0 on V3s SoC can also be routed to a pair of EHCI/OHCI
-controllers.
-
-Add the device nodes for the controllers.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s.dtsi | 19 +++++++++++++++++++
- 1 file changed, 19 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s.dtsi b/arch/arm/boot/dts/sun8i-v3s.dtsi
-index fe6339ad52b2..ea26fef67bfa 100644
---- a/arch/arm/boot/dts/sun8i-v3s.dtsi
-+++ b/arch/arm/boot/dts/sun8i-v3s.dtsi
-@@ -279,6 +279,25 @@ usbphy: phy@1c19400 {
- 			#phy-cells = <1>;
- 		};
- 
-+		ehci0: usb@1c1a000 {
-+			compatible = "allwinner,sun8i-v3s-ehci", "generic-ehci";
-+			reg = <0x01c1a000 0x100>;
-+			interrupts = <GIC_SPI 72 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_EHCI0>, <&ccu CLK_BUS_OHCI0>;
-+			resets = <&ccu RST_BUS_EHCI0>, <&ccu RST_BUS_OHCI0>;
-+			status = "disabled";
-+		};
-+
-+		ohci0: usb@1c1a400 {
-+			compatible = "allwinner,sun8i-v3s-ohci", "generic-ohci";
-+			reg = <0x01c1a400 0x100>;
-+			interrupts = <GIC_SPI 73 IRQ_TYPE_LEVEL_HIGH>;
-+			clocks = <&ccu CLK_BUS_EHCI0>, <&ccu CLK_BUS_OHCI0>,
-+				 <&ccu CLK_USB_OHCI0>;
-+			resets = <&ccu RST_BUS_EHCI0>, <&ccu RST_BUS_OHCI0>;
-+			status = "disabled";
-+		};
-+
- 		ccu: clock@1c20000 {
- 			compatible = "allwinner,sun8i-v3s-ccu";
- 			reg = <0x01c20000 0x400>;
--- 
-2.29.0
-
-
-From 65d891639488a741c2dfa3cdbeafae9a51634faa Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Sun, 22 Nov 2020 08:40:10 +0800
-Subject: [PATCH 17/18] ARM: dts: sun8i: v3s: enable EHCI/OHCI for Lichee Pi
- Zero
-
-As the USB port on Lichee Pi Zero works in the OTG mode, enable the
-EHCI/OHCI controllers for it.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts | 8 ++++++++
- 1 file changed, 8 insertions(+)
-
-diff --git a/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts b/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts
-index 2e4587d26ce5..0cd969194acb 100644
---- a/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts
-+++ b/arch/arm/boot/dts/sun8i-v3s-licheepi-zero.dts
-@@ -77,6 +77,10 @@ red_led {
- 	};
- };
- 
-+&ehci0 {
-+	status = "okay";
-+};
-+
- &mmc0 {
- 	broken-cd;
- 	bus-width = <4>;
-@@ -84,6 +88,10 @@ &mmc0 {
- 	status = "okay";
- };
- 
-+&ohci0 {
-+	status = "okay";
-+};
-+
- &uart0 {
- 	pinctrl-0 = <&uart0_pb_pins>;
- 	pinctrl-names = "default";
--- 
-2.29.0
-
-
-From ca1700b440f7c4bf6abdc3db8d598b3e8b7d2a31 Mon Sep 17 00:00:00 2001
-From: Icenowy Zheng <icenowy@aosc.io>
-Date: Sun, 22 Nov 2020 08:40:11 +0800
-Subject: [PATCH 18/18] ARM: dts: sun8i: s3: switch PineCube to use OHCI/EHCI
- only
-
-The PineCube board features a USB Type-A connector connected to the
-SoC's USB pins.
-
-As this is not designed for being used as a USB device, disable OTG
-controller and route USB to OHCI/EHCI fixedly.
-
-Signed-off-by: Icenowy Zheng <icenowy@aosc.io>
----
- arch/arm/boot/dts/sun8i-s3-pinecube.dts | 17 ++++++++++++-----
- 1 file changed, 12 insertions(+), 5 deletions(-)
-
-diff --git a/arch/arm/boot/dts/sun8i-s3-pinecube.dts b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-index edfa6847735c..a852608e7666 100644
---- a/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-+++ b/arch/arm/boot/dts/sun8i-s3-pinecube.dts
-@@ -78,6 +78,12 @@ csi1_ep: endpoint {
- 	};
- };
- 
-+&ehci0 {
-+	phys = <&usbphy 0>;
-+	phy-names = "usb";
-+	status = "okay";
-+};
-+
- &emac {
- 	phy-handle = <&int_mii_phy>;
- 	phy-mode = "mii";
-@@ -158,6 +164,12 @@ &mmc1 {
- 	status = "okay";
- };
- 
-+&ohci0 {
-+	phys = <&usbphy 0>;
-+	phy-names = "usb";
-+	status = "okay";
-+};
-+
- &pio {
- 	vcc-pd-supply = <&reg_dcdc3>;
- 	vcc-pe-supply = <&reg_ldo3>;
-@@ -228,11 +240,6 @@ &uart2 {
- 	status = "okay";
- };
- 
--&usb_otg {
--	dr_mode = "host";
--	status = "okay";
--};
--
- &usbphy {
- 	usb0_vbus-supply = <&reg_vcc5v0>;
- 	status = "okay";
--- 
-2.29.0
+2.32.0
 
