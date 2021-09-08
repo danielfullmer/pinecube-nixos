@@ -11,7 +11,7 @@
   nixpkgs.overlays = [ (self: super: {
     # Dependency minimization for cross-compiling
     cairo = super.cairo.override { glSupport = false; };
-    libass = super.libass.override { encaSupport = false; };
+    #libass = super.libass.override { encaSupport = false; };
     gnutls = super.gnutls.override { guileBindings = false; };
     polkit = super.polkit.override { withIntrospection = false; };
   }) ];
