@@ -13,5 +13,4 @@ pkgs.buildUBoot {
 
   extraMeta.platforms = ["armv7l-linux"];
   filesToInstall = ["u-boot-sunxi-with-spl.bin"];
-
 }
