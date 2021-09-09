@@ -12,16 +12,6 @@
   boot.kernelPatches = [
     { name = "pine64-pinecube";
       patch = ./kernel/Pine64-PineCube-support.patch;
-      # sunxi_defconfig is missing wireless support
-      # TODO: Are all of these options needed here?
-      extraConfig = ''
-        CFG80211 m
-        WIRELESS y
-        WLAN y
-        RFKILL y
-        RFKILL_INPUT y
-        RFKILL_GPIO y
-      '';
     }
   ];
 

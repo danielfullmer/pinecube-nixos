@@ -2,9 +2,24 @@
 
 {
   nixpkgs.crossSystem = lib.recursiveUpdate lib.systems.examples.armv7l-hf-multiplatform {
-    platform = {
+    name = "pinecube";
+    gcc = {
+      cpu = "cortex-a7";
+      fpu = "neon-vfpv4";
+    };
+    linux-kernel = {
       name = "pinecube";
-      kernelBaseConfig = "sunxi_defconfig";
+      # sunxi_defconfig is missing wireless support
+      # TODO: Are all of these options needed here?
+      baseConfig = "sunxi_defconfig";
+      extraConfig = ''
+        CFG80211 m
+        WIRELESS y
+        WLAN y
+        RFKILL y
+        RFKILL_INPUT y
+        RFKILL_GPIO y
+      '';
     };
   };
 
