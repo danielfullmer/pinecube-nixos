@@ -1,18 +1,23 @@
 { config, lib, pkgs, ... }:
 
 {
-  nixpkgs.crossSystem = lib.recursiveUpdate lib.systems.examples.armv7l-hf-multiplatform {
+  nixpkgs.crossSystem = lib.systems.examples.armv7l-hf-multiplatform // {
     name = "pinecube";
     gcc = {
-      cpu = "cortex-a7";
-      fpu = "neon-vfpv4";
+      arch = "armv7-a";
+      #tune = "cortex-a7";
+      #cpu = "cortex-a7";
+
+      fpu = "vfpv3-d16";
+      #fpu = "neon-vfpv4";
     };
-    linux-kernel = {
+    linux-kernel = lib.systems.platforms.armv7l-hf-multiplatform.linux-kernel // {
       name = "pinecube";
       # sunxi_defconfig is missing wireless support
       # TODO: Are all of these options needed here?
       baseConfig = "sunxi_defconfig";
-      extraConfig = ''
+      # autoModules = false;
+      extraConfig = lib.systems.platforms.armv7l-hf-multiplatform.linux-kernel.extraConfig + ''
         CFG80211 m
         WIRELESS y
         WLAN y
@@ -21,6 +26,13 @@
         RFKILL_GPIO y
       '';
     };
+  };
+
+  boot.initrd = {
+    includeDefaultModules = false;
+    availableKernelModules = lib.mkForce [
+      "mmc_block" "usbhid" "hid_generic"
+    ];
   };
 
   nixpkgs.overlays = [ (self: super: {
